@@ -101,9 +101,13 @@ void QxHelloTriangle::Initialize(const SampleInitInfo& InitInfo)
         m_pDevice->CreateShader(shaderCI, &pPS);
     }
 
+    psoCreateInfo.pVS = pVS;
+    psoCreateInfo.pPS = pPS;
     m_pDevice->CreateGraphicsPipelineState(
         psoCreateInfo
         , &m_pPSO);
+
+   // float i = 10.f;
 }
     // OpenGL backend requires emulated combined HLSL texture samplers (g_Texture + g_Texture_sampler combination)
 
