@@ -27,13 +27,17 @@
 
 #include "Tutorial01_HelloTriangle.hpp"
 
+#include "QxHelloTriangle.h"
+
 namespace Diligent
 {
 
 SampleBase* CreateSample()
 {
-    return new Tutorial01_HelloTriangle();
+    //return new Tutorial01_HelloTriangle();
+    return new QxHelloTriangle();
 }
+
 
 // For this tutorial, we will use simple vertex shader
 // that creates a procedural triangle

@@ -4,10 +4,12 @@ project(Tutorial01_HelloTriangle CXX)
 
 set(SOURCE
     src/Tutorial01_HelloTriangle.cpp
+    src/QxHelloTriangle.cpp
 )
 
 set(INCLUDE
     src/Tutorial01_HelloTriangle.hpp
+    src/QxHelloTriangle.h
 )
 
 set(SHADERS)
