@@ -240,7 +240,7 @@ void Tutorial02_Cube::Render()
         // Map the buffer and write current world-view-projection matrix
         MapHelper<float4x4> CBConstants(m_pImmediateContext, m_VSConstants, MAP_WRITE, MAP_FLAG_DISCARD);
         *CBConstants = m_WorldViewProjMatrix.Transpose();
-    }
+    }   
 
     // Bind vertex and index buffers
     const Uint64 offset   = 0;

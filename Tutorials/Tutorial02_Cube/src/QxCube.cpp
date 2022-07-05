@@ -1,5 +1,7 @@
 #include "QxCube.h"
 
+#include "MapHelper.hpp"
+
 namespace Diligent
 {
 void QxCube::Initialize(const SampleInitInfo& InitInfo)
@@ -15,16 +17,53 @@ void QxCube::Render()
     ITextureView* pRTV =  m_pSwapChain->GetCurrentBackBufferRTV();
     ITextureView* pDSV = m_pSwapChain->GetDepthBufferDSV();
     // clear back buffer
-    const float clearColor[] = {0.350f, 0.350f, 0.350f, 1.0f};
+    //const float clearColor[] = {0.350f, 0.350f, 0.350f, 1.0f};
+    const float clearColor[] = {0.350f, 0.35f, 0.350f, 1.0f};
+
     m_pImmediateContext->ClearRenderTarget(pRTV, clearColor, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     m_pImmediateContext->ClearDepthStencil(pDSV, CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-    
-    
+    {
+        MapHelper<float4x4> cbConstants(m_pImmediateContext, m_VSContants, MAP_WRITE, MAP_FLAG_DISCARD);
+        //cbConstants->Transpose();
+        *cbConstants = m_WorldViewProjMatrix.Transpose();
+    }
+
+    // 绑定vertex 和index buffer
+    const Uint64 offset = 0;
+    IBuffer* pBuffers[] = {m_CubeVertxBuffer};
+    m_pImmediateContext->SetVertexBuffers(0, 1, pBuffers, &offset,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION, SET_VERTEX_BUFFERS_FLAG_RESET);
+    m_pImmediateContext->SetIndexBuffer(m_CubeIndexBuffer, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    // 设置pso
+    m_pImmediateContext->SetPipelineState(m_pPSO);
+    // commit shader resource。 transition模式自动将资源转换到需要的状态
+    m_pImmediateContext->CommitShaderResources(m_pSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    DrawIndexedAttribs drawAttribs;
+    drawAttribs.IndexType  = VT_UINT32;
+    drawAttribs.NumIndices = 36;
+    drawAttribs.Flags      = DRAW_FLAG_VERIFY_ALL;
+    m_pImmediateContext->DrawIndexed(drawAttribs);
 }
 void QxCube::Update(double CurrTime, double ElapsedTime)
 {
     SampleBase::Update(CurrTime, ElapsedTime);
+
+    float4x4 cubeModelTransform = float4x4::RotationY(
+        static_cast<float>(CurrTime) * 1.0f)
+        * float4x4::RotationX(-PI_F * 0.1F);
+
+    float4x4 viewMat = float4x4::Translation(0.f, 0.f, 5.f);
+
+    float4x4 srfPreTransform = GetSurfacePretransformMatrix(float3{0, 0, 1});
+
+    // get projection matrix
+    float4x4 proj = GetAdjustedProjectionMatrix(PI_F / 4.f, 0.1f, 100.f);
+
+    // 计算mvp
+    m_WorldViewProjMatrix = cubeModelTransform * viewMat * srfPreTransform * proj;
 }
 
 void QxCube::CreatePipelineState()
