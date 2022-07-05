@@ -29,13 +29,15 @@
 #include "MapHelper.hpp"
 #include "GraphicsUtilities.h"
 #include "TextureUtilities.h"
+#include "QxTexturing.h"
 
 namespace Diligent
 {
 
 SampleBase* CreateSample()
 {
-    return new Tutorial03_Texturing();
+    //return new Tutorial03_Texturing();
+    return new QxTexturing();
 }
 
 void Tutorial03_Texturing::CreatePipelineState()
