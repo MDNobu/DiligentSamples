@@ -28,13 +28,15 @@
 #include "Tutorial02_Cube.hpp"
 #include "MapHelper.hpp"
 #include "GraphicsUtilities.h"
+#include "QxCube.h"
 
 namespace Diligent
 {
 
 SampleBase* CreateSample()
 {
-    return new Tutorial02_Cube();
+    // return new Tutorial02_Cube();
+    return new QxCube();
 }
 
 void Tutorial02_Cube::CreatePipelineState()

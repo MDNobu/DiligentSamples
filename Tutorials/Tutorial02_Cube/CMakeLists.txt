@@ -4,15 +4,19 @@ project(Tutorial02_Cube CXX)
 
 set(SOURCE
     src/Tutorial02_Cube.cpp
+    src/QxCube.cpp
 )
 
 set(INCLUDE
     src/Tutorial02_Cube.hpp
+    src/QxCube.h
 )
 
 set(SHADERS
     assets/cube.vsh
     assets/cube.psh
+    assets/QxCube.vsh
+    assets/QxCube.psh
 )
 
 set(ASSETS)
