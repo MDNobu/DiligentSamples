@@ -17,6 +17,11 @@ public:
     void Update(double CurrTime, double ElapsedTime) override;
 
 private:
+    void CreatePSO();
+    void CreateVertexBuffer();
+    void CreateIndexBuffer();
+    void  LoadTexture();
+private:
 
     RefCntAutoPtr<IPipelineState> m_pPSO;
     RefCntAutoPtr<IBuffer>        m_CubeVertexBuffer;

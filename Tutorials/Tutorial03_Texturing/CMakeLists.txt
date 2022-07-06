@@ -4,15 +4,19 @@ project(Tutorial03_Texturing CXX)
 
 set(SOURCE
     src/Tutorial03_Texturing.cpp
+    src/QxTexturing.cpp
 )
 
 set(INCLUDE
     src/Tutorial03_Texturing.hpp
+    src/QxTexturing.h
 )
 
 set(SHADERS
     assets/cube.vsh
     assets/cube.psh
+    assets/QxCube.psh
+    assets/QxCube.vsh
 )
 
 set(ASSETS
