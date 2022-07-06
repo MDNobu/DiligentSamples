@@ -27,13 +27,15 @@
 
 #include "ImguiDemo.hpp"
 #include "imgui.h"
+#include "QxImguiDemo.h"
 
 namespace Diligent
 {
 
 SampleBase* CreateSample()
 {
-    return new ImguiDemo();
+    return new QxImguiDemo();
+    // return new ImguiDemo();
 }
 
 ImguiDemo::~ImguiDemo()
@@ -72,7 +74,7 @@ void ImguiDemo::UpdateUI()
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
     }
-
+    
     // 3. Show another simple window.
     if (m_ShowAnotherWindow)
     {

@@ -4,11 +4,13 @@ project(ImguiDemo CXX)
 
 set(SOURCE
     src/ImguiDemo.cpp
+    src/QxImguiDemo.cpp
     ${DILIGENT_DEAR_IMGUI_PATH}/imgui_demo.cpp
 )
 
 set(INCLUDE
     src/ImguiDemo.hpp
+    src/QxImguiDemo.h
 )
 
 set(SHADERS
