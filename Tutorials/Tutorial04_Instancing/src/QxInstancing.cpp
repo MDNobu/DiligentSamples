@@ -10,6 +10,12 @@
 
 namespace Diligent
 {
+struct InstanceData
+{
+    float4x4 Matrix;
+    float TextureIndex = 0.f;
+};
+
 void QxInstancing::Initialize(const SampleInitInfo& InitInfo)
 {
     SampleBase::Initialize(InitInfo);
@@ -22,16 +28,17 @@ void QxInstancing::Initialize(const SampleInitInfo& InitInfo)
     m_CubeIndexBuffer = TexturedCube::CreateIndexBuffer(
         m_pDevice);
 
-    m_TextureSRV = TexturedCube::LoadTexture(m_pDevice,
-        "DGLogo.png")->GetDefaultView(
-            TEXTURE_VIEW_SHADER_RESOURCE);
-
-    IShaderResourceVariable* texturePSVar =
-        m_SRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture");
-    texturePSVar->Set(m_TextureSRV);
+    // m_TextureSRV = TexturedCube::LoadTexture(m_pDevice,
+    //     "DGLogo.png")->GetDefaultView(
+    //         TEXTURE_VIEW_SHADER_RESOURCE);
+    //
+    // IShaderResourceVariable* texturePSVar =
+    //     m_SRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture");
+    // texturePSVar->Set(m_TextureSRV);
    // ->Set(m_TextureSRV);
     
     CreatInstanceBuffer();
+    LoadTextures();
 }
 
 void QxInstancing::Render()
@@ -104,7 +111,8 @@ void QxInstancing::CreatPipelineState()
         LayoutElement{2, 1, 4, VT_FLOAT32, false, INPUT_ELEMENT_FREQUENCY_PER_INSTANCE},
         LayoutElement{3, 1, 4, VT_FLOAT32, false, INPUT_ELEMENT_FREQUENCY_PER_INSTANCE},
         LayoutElement{4, 1, 4, VT_FLOAT32, false, INPUT_ELEMENT_FREQUENCY_PER_INSTANCE},
-        LayoutElement{5, 1, 4, VT_FLOAT32, false, INPUT_ELEMENT_FREQUENCY_PER_INSTANCE}
+        LayoutElement{5, 1, 4, VT_FLOAT32, false, INPUT_ELEMENT_FREQUENCY_PER_INSTANCE},
+        LayoutElement{6, 1, 1, VT_FLOAT32, false, INPUT_ELEMENT_FREQUENCY_PER_INSTANCE}
     };
 
     RefCntAutoPtr<IShaderSourceInputStreamFactory> pShaderResourceFactory;
@@ -154,8 +162,10 @@ void QxInstancing::CreatInstanceBuffer()
 void QxInstancing::PopulateInstanceBuffer()
 {
     const size_t          zGridSize = static_cast<size_t>(m_GridSize);
-    std::vector<float4x4> instanceData(
-        zGridSize * zGridSize * zGridSize);
+    // std::vector<float4x4> instanceData(
+    //     zGridSize * zGridSize * zGridSize);
+    std::vector<InstanceData> instanceDatas(zGridSize * zGridSize * zGridSize);
+    
 
     float fGridSize = static_cast<float>(m_GridSize);
 
@@ -165,6 +175,7 @@ void QxInstancing::PopulateInstanceBuffer()
     std::uniform_real_distribution<float> scale_distr(0.3f, 1.0f);
     std::uniform_real_distribution<float> offset_distr(-0.15f, +0.15f);
     std::uniform_real_distribution<float> rot_distr(-PI_F, +PI_F);
+    std::uniform_int_distribution<Int32>  tex_distr(0, NumTextures - 1);
 
     float baseScale = 0.6f / fGridSize;
     int instId = 0;
@@ -184,17 +195,20 @@ void QxInstancing::PopulateInstanceBuffer()
                 float4x4 rotation = float4x4::RotationX(rot_distr(gen)) * float4x4::RotationY(rot_distr(gen)) * float4x4::RotationZ(rot_distr(gen));
                 // Combine rotation, scale and translation
                 float4x4 matrix        = rotation * float4x4::Scale(scale, scale, scale) * float4x4::Translation(xOffset, yOffset, zOffset);
-                instanceData[instId++] = matrix;
+                InstanceData& curInst = instanceDatas[instId++];
+                curInst.Matrix = matrix;
+                curInst.TextureIndex = static_cast<float>(tex_distr(gen));
+                // instanceData[instId++] = matrix;
             }
         }
     }
 
     // Update instance data buffer
     Uint32 dataSize = static_cast<Uint32>(
-        sizeof(instanceData[0]) * instanceData.size());
+        sizeof(instanceDatas[0]) * instanceDatas.size());
     m_pImmediateContext->UpdateBuffer(
         m_InstancedBuffer, 0, dataSize,
-        instanceData.data(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        instanceDatas.data(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void QxInstancing::UpdateUI()
@@ -210,6 +224,46 @@ void QxInstancing::UpdateUI()
     
     ImGui::End();
 }
+
+void QxInstancing::LoadTextures()
+{
+    RefCntAutoPtr<ITexture> pTextureArray;
+    for (int texIndex = 0; texIndex < NumTextures; ++texIndex)
+    {
+        std::stringstream filenameSS;
+        filenameSS << "DGLogo" << texIndex << ".png";
+        const auto fileName= filenameSS.str();
+        RefCntAutoPtr<ITexture> srcTex = TexturedCube::LoadTexture(
+            m_pDevice, fileName.c_str());
+        const auto& texDesc = srcTex->GetDesc();
+        if (pTextureArray == nullptr)
+        {
+            auto texArrayDesc = texDesc;
+            texArrayDesc.ArraySize = NumTextures;
+            texArrayDesc.Type = RESOURCE_DIM_TEX_2D_ARRAY;
+            texArrayDesc.Usage = USAGE_DEFAULT;
+            texArrayDesc.BindFlags = BIND_SHADER_RESOURCE;
+            m_pDevice->CreateTexture(texArrayDesc, nullptr, &pTextureArray);
+        }
+
+        // copy current texture into the texture array
+        for (int mip = 0; mip < texDesc.MipLevels; ++mip)
+        {
+            CopyTextureAttribs copyAttib(
+                srcTex, RESOURCE_STATE_TRANSITION_MODE_TRANSITION,
+                pTextureArray, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+            copyAttib.DstMipLevel = mip;
+            copyAttib.SrcMipLevel = mip;
+            copyAttib.DstSlice = texIndex;
+            m_pImmediateContext->CopyTexture(copyAttib);
+        }
+    }
+
+    m_TextureSRV = pTextureArray->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
+    m_SRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_TextureSRV);
+    
+ }
 }
 
 

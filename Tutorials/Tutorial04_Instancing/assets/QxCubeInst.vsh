@@ -15,12 +15,14 @@ struct VSInput
     float4 ModelMatRow1 : ATTRIB3;
     float4 ModelMatRow2 : ATTRIB4;
     float4 ModelMatRow3 : ATTRIB5;
+    float TexArrayIndex : ATTRIB6;
 };
 
 struct PSInput
 {
     float4 Pos : SV_POSITION;
     float2 UV : TEX_COORD;
+    float TexIndex : TEX_ARRAY_INDEX;
 };
 
 void main(in VSInput VSIn, out PSInput VSOut)
@@ -34,4 +36,6 @@ void main(in VSInput VSIn, out PSInput VSOut)
     
     VSOut.Pos = mul(transformedPos, g_ViewProj);
     VSOut.UV = VSIn.UV;
+    
+    VSOut.TexIndex = VSIn.TexArrayIndex;
 };

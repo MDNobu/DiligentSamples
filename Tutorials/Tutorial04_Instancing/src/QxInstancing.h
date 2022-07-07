@@ -8,9 +8,9 @@ namespace Diligent
 class QxInstancing final : public SampleBase
 {
 public:
-
-    void        Initialize(const SampleInitInfo& InitInfo) override;
-    void        Render() override;
+   
+    void Initialize(const SampleInitInfo& InitInfo) override;
+    void Render() override;
     
     void        Update(double CurrTime, double ElapsedTime) override;
     const Char* GetSampleName() const override
@@ -22,6 +22,7 @@ private:
     void CreatInstanceBuffer();
     void  PopulateInstanceBuffer();
     void UpdateUI();
+    void  LoadTextures();
 private:
 
     RefCntAutoPtr<IPipelineState> m_pPSO;
@@ -38,7 +39,8 @@ private:
     int m_GridSize = 5;
 
     static constexpr int MaxGridSize = 32;
-    static constexpr int MaxInstances = MaxGridSize * MaxGridSize * MaxGridSize; 
+    static constexpr int MaxInstances = MaxGridSize * MaxGridSize * MaxGridSize;
+    static constexpr int NumTextures  = 4;
 };
 
 
