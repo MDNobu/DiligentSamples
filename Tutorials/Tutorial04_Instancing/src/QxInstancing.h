@@ -37,7 +37,7 @@ private:
     float4x4 m_RoationMatrix;
     int m_GridSize = 5;
 
-    static constexpr int MaxGridSize = 5;
+    static constexpr int MaxGridSize = 32;
     static constexpr int MaxInstances = MaxGridSize * MaxGridSize * MaxGridSize; 
 };
 

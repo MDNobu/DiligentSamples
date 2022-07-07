@@ -1,5 +1,7 @@
 #include "QxInstancing.h"
 
+#include <random>
+
 #include "GraphicsUtilities.h"
 #include "imgui.h"
 #include "ImGuiUtils.hpp"
@@ -24,7 +26,10 @@ void QxInstancing::Initialize(const SampleInitInfo& InitInfo)
         "DGLogo.png")->GetDefaultView(
             TEXTURE_VIEW_SHADER_RESOURCE);
 
-    m_SRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_TextureSRV);
+    IShaderResourceVariable* texturePSVar =
+        m_SRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture");
+    texturePSVar->Set(m_TextureSRV);
+   // ->Set(m_TextureSRV);
     
     CreatInstanceBuffer();
 }
@@ -45,7 +50,26 @@ void QxInstancing::Render()
         cbConstance[1] = m_RoationMatrix.Transpose();
     }
 
-    
+    // bind vb/ib/instance buffer
+    const Uint64 offsets[] = {0, 0};
+    IBuffer* pBuffers[] = {m_CubeVertexBuffer, m_InstancedBuffer};
+    m_pImmediateContext->SetVertexBuffers(0,
+                                          _countof(pBuffers), pBuffers, offsets, RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+                                          , SET_VERTEX_BUFFERS_FLAG_RESET);
+    m_pImmediateContext->SetIndexBuffer(m_CubeIndexBuffer,
+                                        0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    // set pso
+    m_pImmediateContext->SetPipelineState(m_pPSO);
+    m_pImmediateContext->CommitShaderResources(m_SRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    DrawIndexedAttribs drawAttribs;
+    drawAttribs.IndexType  = VT_UINT32;
+    drawAttribs.NumIndices = 36;
+    drawAttribs.NumInstances =
+        m_GridSize * m_GridSize * m_GridSize;
+    drawAttribs.Flags      = DRAW_FLAG_VERIFY_ALL;
+    m_pImmediateContext->DrawIndexed(drawAttribs);
 }
 
 void QxInstancing::Update(double CurrTime, double ElapsedTime)
@@ -109,6 +133,7 @@ void QxInstancing::CreatPipelineState()
     m_pPSO->GetStaticVariableByName(SHADER_TYPE_VERTEX,
         "QxConstants")->Set(m_VS_Constants);
 
+    
     m_pPSO->CreateShaderResourceBinding(
         &m_SRB, true);
 }
@@ -128,7 +153,48 @@ void QxInstancing::CreatInstanceBuffer()
 
 void QxInstancing::PopulateInstanceBuffer()
 {
-    
+    const size_t          zGridSize = static_cast<size_t>(m_GridSize);
+    std::vector<float4x4> instanceData(
+        zGridSize * zGridSize * zGridSize);
+
+    float fGridSize = static_cast<float>(m_GridSize);
+
+    std::mt19937 gen; // Standard mersenne_twister_engine. Use default seed
+    // to generate consistent distribution.
+
+    std::uniform_real_distribution<float> scale_distr(0.3f, 1.0f);
+    std::uniform_real_distribution<float> offset_distr(-0.15f, +0.15f);
+    std::uniform_real_distribution<float> rot_distr(-PI_F, +PI_F);
+
+    float baseScale = 0.6f / fGridSize;
+    int instId = 0;
+    for (int x = 0; x < m_GridSize; ++x)
+    {
+        for (int y = 0; y < m_GridSize; ++y)
+        {
+            for (int z = 0; z < m_GridSize; ++z)
+            {
+                // Add random offset from central position in the grid
+                float xOffset = 2.f * (x + 0.5f + offset_distr(gen)) / fGridSize - 1.f;
+                float yOffset = 2.f * (y + 0.5f + offset_distr(gen)) / fGridSize - 1.f;
+                float zOffset = 2.f * (z + 0.5f + offset_distr(gen)) / fGridSize - 1.f;
+                // Random scale
+                float scale = baseScale * scale_distr(gen);
+                // Random rotation
+                float4x4 rotation = float4x4::RotationX(rot_distr(gen)) * float4x4::RotationY(rot_distr(gen)) * float4x4::RotationZ(rot_distr(gen));
+                // Combine rotation, scale and translation
+                float4x4 matrix        = rotation * float4x4::Scale(scale, scale, scale) * float4x4::Translation(xOffset, yOffset, zOffset);
+                instanceData[instId++] = matrix;
+            }
+        }
+    }
+
+    // Update instance data buffer
+    Uint32 dataSize = static_cast<Uint32>(
+        sizeof(instanceData[0]) * instanceData.size());
+    m_pImmediateContext->UpdateBuffer(
+        m_InstancedBuffer, 0, dataSize,
+        instanceData.data(), RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void QxInstancing::UpdateUI()

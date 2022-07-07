@@ -34,4 +34,4 @@ void main(in VSInput VSIn, out PSInput VSOut)
     
     VSOut.Pos = mul(transformedPos, g_ViewProj);
     VSOut.UV = VSIn.UV;
-}
+};
