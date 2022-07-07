@@ -33,13 +33,15 @@
 #include "TextureUtilities.h"
 #include "../../Common/src/TexturedCube.hpp"
 #include "imgui.h"
+#include "QxInstancing.h"
 
 namespace Diligent
 {
 
 SampleBase* CreateSample()
 {
-    return new Tutorial04_Instancing();
+    // return new Tutorial04_Instancing();
+    return new QxInstancing();
 }
 
 void Tutorial04_Instancing::CreatePipelineState()
