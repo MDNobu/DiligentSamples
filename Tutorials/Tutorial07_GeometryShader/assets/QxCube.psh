@@ -1,0 +1,32 @@
+#include "QxStructures.fxh"
+
+Texture2D g_Texture;
+SamplerState g_Texture_sampler;
+
+cbuffer PSConstants
+{
+    Constants g_Constants;
+};
+
+struct PSOutput
+{
+    float4 Color : SV_TARGET;
+};
+
+void main(in GSOutput PSIn,
+    out PSOutput PSOut)
+{
+    float4 outColor = g_Texture.Sample(g_Texture_sampler, PSIn.VSOut.UV);
+    
+    float minDist = min(PSIn.DistToEdges.x, PSIn.DistToEdges.y);
+    minDist = min(minDist, PSIn.DistToEdges.z);
+
+    float lineWidth = g_Constants.LineWidth;
+    float lineIntensity = saturate((lineWidth - minDist)
+        / lineWidth);
+    
+    float3 edgeColor = float3(0., 0., 0.);
+    outColor.rgb = lerp(outColor.rgb, edgeColor, lineIntensity);
+
+    PSOut.Color = outColor;
+}
