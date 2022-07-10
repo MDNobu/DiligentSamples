@@ -14,7 +14,7 @@ void main(triangle VSOutput In[3],
 
     float2 edge0 = v2 - v1;
     float2 edge1 = v2 - v0;
-    float2 edge2 = v2 - v0;
+    float2 edge2 = v1 - v0;
     // edge1和edge2围成的平行四边形的面积，这里利用的叉积的几何性质
     float area = abs(edge1.x * edge2.y - edge1.y * edge2.x);
 

@@ -102,7 +102,8 @@ void Tutorial07_GeometryShader::CreatePipelineState()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Cube VS";
-        ShaderCI.FilePath        = "cube.vsh";
+        // ShaderCI.FilePath        = "cube.vsh";
+        ShaderCI.FilePath = "QxCube.vsh";
         m_pDevice->CreateShader(ShaderCI, &pVS);
     }
 
@@ -112,7 +113,8 @@ void Tutorial07_GeometryShader::CreatePipelineState()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_GEOMETRY;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Cube GS";
-        ShaderCI.FilePath        = "cube.gsh";
+        // ShaderCI.FilePath        = "cube.gsh";
+        ShaderCI.FilePath = "QxCube.gsh";
         m_pDevice->CreateShader(ShaderCI, &pGS);
     }
 
@@ -122,7 +124,8 @@ void Tutorial07_GeometryShader::CreatePipelineState()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Cube PS";
-        ShaderCI.FilePath        = "cube.psh";
+        // ShaderCI.FilePath        = "cube.psh";
+        ShaderCI.FilePath = "QxCube.psh";
         m_pDevice->CreateShader(ShaderCI, &pPS);
     }
 

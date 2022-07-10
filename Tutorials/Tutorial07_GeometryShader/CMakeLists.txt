@@ -4,11 +4,13 @@ project(Tutorial07_GeometryShader CXX)
 
 set(SOURCE
     src/Tutorial07_GeometryShader.cpp
+    src/QxGeometryShader.cpp
     ../Common/src/TexturedCube.cpp
 )
 
 set(INCLUDE
     src/Tutorial07_GeometryShader.hpp
+    src/QxGeometryShader.h
     ../Common/src/TexturedCube.hpp
 )
 
@@ -17,6 +19,10 @@ set(SHADERS
     assets/cube.psh
     assets/cube.gsh
     assets/structures.fxh
+    assets/QxStructures.fxh
+    assets/QxCube.gsh
+    assets/QxCube.psh
+    assets/QxCube.vsh
 )
 
 set(ASSETS
