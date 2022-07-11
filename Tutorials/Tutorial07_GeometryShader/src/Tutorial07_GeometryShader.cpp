@@ -31,13 +31,15 @@
 #include "TextureUtilities.h"
 #include "../../Common/src/TexturedCube.hpp"
 #include "imgui.h"
+#include "QxGeometryShader.h"
 
 namespace Diligent
 {
 
 SampleBase* CreateSample()
 {
-    return new Tutorial07_GeometryShader();
+    // return new Tutorial07_GeometryShader();
+    return  new QxGeometryShader();
 }
 
 namespace
@@ -183,7 +185,8 @@ void Tutorial07_GeometryShader::CreatePipelineState()
     // and 'PSConstants' variables, default type (SHADER_RESOURCE_VARIABLE_TYPE_STATIC) will be used.
     // Static variables never change and are bound directly to the pipeline state object.
     m_pPSO->GetStaticVariableByName(SHADER_TYPE_VERTEX,   "VSConstants")->Set(m_ShaderConstants);
-    m_pPSO->GetStaticVariableByName(SHADER_TYPE_GEOMETRY, "GSConstants")->Set(m_ShaderConstants);
+   IShaderResourceVariable* pGSConstants =  m_pPSO->GetStaticVariableByName(SHADER_TYPE_GEOMETRY, "GSConstants");
+    pGSConstants->Set(m_ShaderConstants);
     m_pPSO->GetStaticVariableByName(SHADER_TYPE_PIXEL,    "PSConstants")->Set(m_ShaderConstants);
     // clang-format on
 
