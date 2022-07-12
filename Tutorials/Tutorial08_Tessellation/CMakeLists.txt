@@ -4,20 +4,29 @@ project(Tutorial08_Tessellation CXX)
 
 set(SOURCE
     src/Tutorial08_Tessellation.cpp
+    src/QxTessellation.cpp
 )
 
 set(INCLUDE
     src/Tutorial08_Tessellation.hpp
+    src/QxTessellation.h
 )
 
 set(SHADERS
+    assets/terrain_wire.psh
     assets/terrain.vsh
     assets/terrain.psh
-    assets/terrain_wire.psh
     assets/terrain.gsh
     assets/terrain.hsh
     assets/terrain.dsh
     assets/structures.fxh
+    assets/QxTerrain.vsh
+    assets/QxTerrain.psh
+    assets/QxTerrain.gsh
+    assets/QxTerrain.hsh
+    assets/QxTerrain.dsh
+    assets/QxTerrain_wire.psh
+    assets/QxStructures.fxh
 )
 
 set(ASSETS

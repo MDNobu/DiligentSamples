@@ -1,0 +1,14 @@
+#include "QxStructures.fxh"
+
+Texture2D<float> g_HeightMap;
+SamplerState g_HeightMap_sampler;
+
+cbuffer HSConstants
+{
+    GlobalConstants g_Constants;
+};
+
+#ifndef BLOCK_SIZE
+# define BLOCK_SIZE 32
+#endif
+
