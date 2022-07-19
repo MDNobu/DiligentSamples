@@ -4,17 +4,21 @@ project(Tutorial06_Multithreading CXX)
 
 set(SOURCE
     src/Tutorial06_Multithreading.cpp
+    src/QxMultithreading.cpp
     ../Common/src/TexturedCube.cpp
 )
 
 set(INCLUDE
     src/Tutorial06_Multithreading.hpp
+    src/QxMultithreading.h
     ../Common/src/TexturedCube.hpp
 )
 
 set(SHADERS
     assets/cube.vsh
     assets/cube.psh
+    assets/QxCube.vsh
+    assets/QxCube.psh
 )
 
 set(ASSETS

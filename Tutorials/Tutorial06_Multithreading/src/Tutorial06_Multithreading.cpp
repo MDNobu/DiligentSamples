@@ -36,13 +36,15 @@
 #include "../../Common/src/TexturedCube.hpp"
 #include "imgui.h"
 #include "ImGuiUtils.hpp"
+#include "QxMultithreading.h"
 
 namespace Diligent
 {
 
 SampleBase* CreateSample()
 {
-    return new Tutorial06_Multithreading();
+    // return new Tutorial06_Multithreading();
+    return new QxMultithreading();
 }
 
 Tutorial06_Multithreading::~Tutorial06_Multithreading()
@@ -74,8 +76,10 @@ void Tutorial06_Multithreading::CreatePipelineState(std::vector<StateTransitionD
     CubePsoCI.RTVFormat            = m_pSwapChain->GetDesc().ColorBufferFormat;
     CubePsoCI.DSVFormat            = m_pSwapChain->GetDesc().DepthBufferFormat;
     CubePsoCI.pShaderSourceFactory = pShaderSourceFactory;
-    CubePsoCI.VSFilePath           = "cube.vsh";
-    CubePsoCI.PSFilePath           = "cube.psh";
+    // CubePsoCI.VSFilePath           = "cube.vsh";
+    CubePsoCI.VSFilePath = "QxCube.vsh";
+    // CubePsoCI.PSFilePath           = "cube.psh";
+    CubePsoCI.PSFilePath = "QxCube.psh";
     CubePsoCI.Components           = TexturedCube::VERTEX_COMPONENT_FLAG_POS_UV;
 
     m_pPSO = TexturedCube::CreatePipelineState(CubePsoCI);
@@ -127,13 +131,15 @@ void Tutorial06_Multithreading::UpdateUI()
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        if (ImGui::SliderInt("Grid Size", &m_GridSize, 1, 32))
+        if (ImGui::SliderInt("Grid Size", &m_GridSize,
+            1, 32))
         {
             PopulateInstanceData();
         }
         {
             ImGui::ScopedDisabler Disable(m_MaxThreads == 0);
-            if (ImGui::SliderInt("Worker Threads", &m_NumWorkerThreads, 0, m_MaxThreads))
+            if (ImGui::SliderInt("Worker Threads",
+                &m_NumWorkerThreads, 0, m_MaxThreads))
             {
                 StopWorkerThreads();
                 StartWorkerThreads(m_NumWorkerThreads);
@@ -370,7 +376,9 @@ void Tutorial06_Multithreading::Render()
         for (Uint32 i = 0; i < m_CmdLists.size(); ++i)
             m_CmdListPtrs[i] = m_CmdLists[i];
 
-        m_pImmediateContext->ExecuteCommandLists(static_cast<Uint32>(m_CmdListPtrs.size()), m_CmdListPtrs.data());
+        m_pImmediateContext->ExecuteCommandLists(
+            static_cast<Uint32>(m_CmdListPtrs.size()),
+            m_CmdListPtrs.data());
 
         for (auto& cmdList : m_CmdLists)
         {
