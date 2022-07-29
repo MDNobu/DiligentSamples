@@ -26,7 +26,8 @@ void main(in  VSInput VSIn,
     pos_uv[3] = float4(+1.0,-1.0, 1.0,1.0);
 
     float2 pos = pos_uv[VSIn.VertID].xy;
-    float2x2 mat = MatrixFromRows(g_QuadRotationAndScale.xy, g_QuadRotationAndScale.zw);
+    float2x2 mat = MatrixFromRows(
+    g_QuadRotationAndScale.xy, g_QuadRotationAndScale.zw);
     pos = mul(pos, mat);
     pos += g_QuadCenter.xy;
     PSIn.Pos = float4(pos, 0.0, 1.0);

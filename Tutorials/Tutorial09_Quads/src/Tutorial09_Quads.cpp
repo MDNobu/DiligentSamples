@@ -38,6 +38,7 @@
 #include "TextureUtilities.h"
 #include "imgui.h"
 #include "ImGuiUtils.hpp"
+#include "QxQuads.h"
 
 namespace Diligent
 {
@@ -45,7 +46,9 @@ namespace Diligent
 SampleBase* CreateSample()
 {
     return new Tutorial09_Quads();
+    // return new QxQuads();
 }
+
 
 Tutorial09_Quads::~Tutorial09_Quads()
 {
@@ -154,10 +157,12 @@ void Tutorial09_Quads::CreatePipelineStates(std::vector<StateTransitionDesc>& Ba
         ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Quad VS";
-        ShaderCI.FilePath        = "quad.vsh";
+        // ShaderCI.FilePath        = "quad.vsh";
+        ShaderCI.FilePath = "QxQuad.vsh";
         m_pDevice->CreateShader(ShaderCI, &pVS);
         ShaderCI.Desc.Name = "Quad VS Batched";
-        ShaderCI.FilePath  = "quad_batch.vsh";
+        // ShaderCI.FilePath  = "quad_batch.vsh";
+        ShaderCI.FilePath = "QxQuadBatch.vsh";
         m_pDevice->CreateShader(ShaderCI, &pVSBatched);
 
         // Create dynamic uniform buffer that will store our transformation matrix
@@ -173,13 +178,15 @@ void Tutorial09_Quads::CreatePipelineStates(std::vector<StateTransitionDesc>& Ba
         ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Quad PS";
-        ShaderCI.FilePath        = "quad.psh";
+        // ShaderCI.FilePath        = "quad.psh";
+        ShaderCI.FilePath = "QxQuad.psh";
 
         m_pDevice->CreateShader(ShaderCI, &pPS);
 
         ShaderCI.Desc.Name = "Quad PS Batched";
-        ShaderCI.FilePath  = "quad_batch.psh";
-
+        // ShaderCI.FilePath  = "quad_batch.psh";
+        ShaderCI.FilePath = "QxQuadBatch.psh";
+        
         m_pDevice->CreateShader(ShaderCI, &pPSBatched);
     }
 

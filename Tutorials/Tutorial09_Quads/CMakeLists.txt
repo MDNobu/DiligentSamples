@@ -4,10 +4,12 @@ project(Tutorial09_Quads CXX)
 
 set(SOURCE
     src/Tutorial09_Quads.cpp
+    src/QxQuads.cpp
 )
 
 set(INCLUDE
     src/Tutorial09_Quads.hpp
+    src/QxQuads.h
 )
 
 set(SHADERS
@@ -15,6 +17,10 @@ set(SHADERS
     assets/quad.psh
     assets/quad_batch.vsh
     assets/quad_batch.psh
+    assets/QxQuadBatch.vsh
+    assets/QxQuadBatch.psh
+    assets/QxQuad.psh
+    assets/QxQuad.vsh
 )
 
 set(ASSETS
