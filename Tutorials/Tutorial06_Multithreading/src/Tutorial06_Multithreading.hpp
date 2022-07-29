@@ -63,9 +63,17 @@ private:
 
     static void WorkerThreadFunc(Tutorial06_Multithreading* pThis, Uint32 ThreadNum);
 
+    // 下面三个变量类似fence的作用，
+    // 渲染subset 的fence render函数中开启
     Threading::Signal        m_RenderSubsetSignal;
+
+    // 执行command list的fence，需要所有worker thread record完线程之后才会开启
     Threading::Signal        m_ExecuteCommandListsSignal;
+
+    // 执行完command list并释放资源后才会开启的，进行下一帧的fence
     Threading::Signal        m_GotoNextFrameSignal;
+    
+    // 这两个变量会被多个线程访问修改，需要是atomitc的
     std::atomic_int          m_NumThreadsCompleted;
     std::atomic_int          m_NumThreadsReady;
     std::vector<std::thread> m_WorkerThreads;

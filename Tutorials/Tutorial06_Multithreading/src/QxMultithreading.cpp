@@ -4,6 +4,7 @@
 #include "ImGuiUtils.hpp"
 #include "GraphicsUtilities.h"
 #include "imgui.h"
+#include "MapHelper.hpp"
 #include "../../Common/src/TexturedCube.hpp"
 
 namespace Diligent
@@ -17,7 +18,7 @@ void QxMultithreading::Initialize(const SampleInitInfo& InitInfo)
 {
     SampleBase::Initialize(InitInfo);
 
-    m_MaxThreads = static_cast<int> m_pDeferredContexts.size();
+    m_MaxThreads = static_cast<int> (m_pDeferredContexts.size());
     m_NumWorkerThreads = std::min(4, m_MaxThreads);
 
     std::vector<StateTransitionDesc> Barriers;
@@ -80,7 +81,7 @@ void QxMultithreading::Render()
         m_ExecuteCommandListsSignal.Wait(true,
             1);
 
-        m_CmdLists.resize(m_CmdLists.size());
+        m_CmdListPtrs.resize(m_CmdLists.size());
         for (Uint32 i = 0; i < m_CmdLists.size(); ++i)
         {
             m_CmdListPtrs[i] = m_CmdLists[i];
@@ -186,7 +187,7 @@ void QxMultithreading::LoadTextures(std::vector<StateTransitionDesc>& Barriers)
     for (int texIndex = 0; texIndex < NumTextures; ++texIndex)
     {
         std::stringstream FileNameSS;
-        FileNameSS << "DGLog" << texIndex << ".png";
+        FileNameSS << "DGLogo" << texIndex << ".png";
         auto FileName = FileNameSS.str();
 
         RefCntAutoPtr<ITexture> SrcTex =
@@ -269,8 +270,52 @@ void QxMultithreading::StartWorkerThreads(size_t NumThreads)
     m_CmdLists.resize(NumThreads);
 }
 
-void QxMultithreading::WorkerThreadFunc(QxMultithreading* pThis, Uint32 ThreadNum)
+void QxMultithreading::WorkerThreadFunc(QxMultithreading* pThis, Uint32 ThreadIndex)
 {
+    // 每个显示使用自己的device context
+    IDeviceContext* pDeferredCtx = pThis->m_pDeferredContexts[ThreadIndex];
+    const int NumWorkerThreads = static_cast<int>(pThis->m_WorkerThreads.size());
+    for (;;)
+    {
+        auto SignaledValue = pThis->m_RenderSubsetSignal.Wait(true, NumWorkerThreads);
+        // <0意味结束执行
+        if (SignaledValue < 0)
+        {
+            return;
+        }
+
+        // record command list之前必须调用
+        pDeferredCtx->Begin(0);
+
+        pThis->RenderSubset(pDeferredCtx, 1 + ThreadIndex);
+        
+        RefCntAutoPtr<ICommandList> pCmdList;
+        pDeferredCtx->FinishCommandList(&pCmdList);
+        pThis->m_CmdLists[ThreadIndex] = pCmdList;
+
+        {
+            // 自动增长完成的线程数量
+            const auto NumThreadsCompleted = pThis->m_NumThreadsCompleted.fetch_add(1) + 1; //+1是为什么#TODO
+            if (NumThreadsCompleted == NumWorkerThreads)
+            {
+                pThis->m_ExecuteCommandListsSignal.Trigger();
+            }
+        }
+
+        // NumWorkerThreads意思是有这么多线程在等待
+        pThis->m_GotoNextFrameSignal.Wait(true, NumWorkerThreads);
+
+        //调用这句deferred context 才会释放动态分配的资源  
+        pDeferredCtx->FinishFrame();
+
+        pThis->m_NumThreadsReady.fetch_add(1);
+
+        while (pThis->m_NumThreadsReady < NumWorkerThreads)
+        {
+            std::this_thread::yield();
+        }
+        VERIFY_EXPR(!pThis->m_GotoNextFrameSignal.IsTriggered());
+    }
     
 }
 
@@ -313,8 +358,63 @@ void QxMultithreading::UpdateUI()
     ImGui::End();
 }
 
-void QxMultithreading::RenderSubset(IDeviceContext* pCtx, Uint32 Subset)
+void QxMultithreading::RenderSubset(IDeviceContext* pCtx, Uint32 SubsetIndex)
 {
+    // deferred context start in default context. 我们必须绑定需要的资源到context 上
+    // render target已经在主线程设置好trasition状态，这里当前线程只需要验证
+    auto* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
+    pCtx->SetRenderTargets(1, &pRTV, m_pSwapChain->GetDepthBufferDSV(), RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+
+    {
+        // map buffer and write wvp
+        MapHelper<float4x4> CBConstants(pCtx, m_VSConstants, MAP_WRITE, MAP_FLAG_DISCARD);
+        CBConstants[0] = m_ViewProjMat.Transpose();
+        CBConstants[1] = m_RotationMat.Transpose();
+    }
+
+    // 绑定vb/ib，每个context都需要
+    IBuffer* pBuffers[] = {m_CubeVertexBuffer};
+    pCtx->SetVertexBuffers(0, _countof(pBuffers),
+        pBuffers, nullptr, RESOURCE_STATE_TRANSITION_MODE_VERIFY, SET_VERTEX_BUFFERS_FLAG_RESET);
+    pCtx->SetIndexBuffer(m_CubeIndexBuffer, 0, RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+
+    DrawIndexedAttribs DrawAttribs;
+    DrawAttribs.IndexType = VT_UINT32;
+    DrawAttribs.NumIndices = 36;
+    DrawAttribs.Flags = DRAW_FLAG_VERIFY_ALL;
+
+    //set the pipeline state
+    pCtx->SetPipelineState(m_pPSO);
+    Uint32 NumSubsets = Uint32{1} + static_cast<Uint32>(m_WorkerThreads.size());
+    Uint32 NumInstances = static_cast<Uint32>(m_InstanceData.size());
+    Uint32 SubsetSize = NumInstances / NumSubsets;
+    Uint32 StartInst = SubsetSize * SubsetIndex;
+    // 最后一组inst可能不满
+    Uint32 EndInstIndex = (SubsetIndex < NumSubsets - 1) ?
+        SubsetSize * (SubsetIndex + 1) : NumInstances;
+    for (size_t instIndex = StartInst; instIndex < EndInstIndex; ++instIndex)
+    {
+        const auto& CurInstData =
+            m_InstanceData[instIndex];
+
+        pCtx->CommitShaderResources(
+            m_SRB[CurInstData.TextureInd], RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+
+        {
+            // map buffer 提交per instance的信息
+            MapHelper<float4x4> InstData(pCtx,
+                m_InstanceConstants, MAP_WRITE, MAP_FLAG_DISCARD);
+            if (InstData == nullptr)
+            {
+                LOG_ERROR_MESSAGE("Failed to map instance data buffer");
+                break;
+            }
+            *InstData = CurInstData.Matrix.Transpose();
+        }
+
+        // 每个instance执行一次draw
+        pCtx->DrawIndexed(DrawAttribs);
+    }
     
 }
 }

@@ -32,10 +32,10 @@ private:
     void StartWorkerThreads(size_t NumThreads);
     void UpdateUI();
 
-    void RenderSubset(IDeviceContext* pCtx, Uint32 Subset);
+    void RenderSubset(IDeviceContext* pCtx, Uint32 SubsetIndex);
     
     static void WorkerThreadFunc(QxMultithreading* pThis,
-        Uint32 ThreadNum);
+        Uint32 ThreadIndex);
 public:
 private:
     Threading::Signal m_RenderSubsetSignal;
@@ -66,7 +66,7 @@ private:
     int m_MaxThreads = 8;
     int m_NumWorkerThreads = 4;
 
-    struct InstanceData;
+    struct InstanceData
     {
         float4x4 Matrix;
         int TextureInd = 0;
