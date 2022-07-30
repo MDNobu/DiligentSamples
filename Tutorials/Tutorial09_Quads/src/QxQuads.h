@@ -23,15 +23,19 @@ public:
         return "QxQuads";
     };
 private:
-    void         UpdateUI();
-    void         UpdateQuads(float elapsedTime);
-    void         CreatePipelineStates(std::vector<StateTransitionDesc>& Barriers);
-    void         LoadTextures(std::vector<StateTransitionDesc>& Barriers);
-    void         InitializeQuads();
-    void         CreateInstanceBuffer();
-    void         StartWorkderThreads(int InNumWorkerThreads);
-    
-    
+    void UpdateUI();
+    void UpdateQuads(float elapsedTime);
+    void CreatePipelineStates(std::vector<StateTransitionDesc>& Barriers);
+    void LoadTextures(std::vector<StateTransitionDesc>& Barriers);
+    void InitializeQuads();
+    void CreateInstanceBuffer();
+    void StartWorkderThreads(int InNumWorkerThreads);
+    void  StopWorkerThreads();
+    template<bool UseBatch>
+    void  RenderSubset(IDeviceContext* pCtx, Uint32 SubsetIndex);
+
+    static void WorkerThreadFunc(
+        QxQuads* pThis, Uint32 ThreadIndex);
     
 private:
 
@@ -47,12 +51,16 @@ private:
     std::vector<ICommandList*> m_CmdListPtrs;
 
     static constexpr  int NumStates = 5;
+    // 这里是创建了NumStates个blend state，绑定到不同的pso上
+    // 同时pso还区分batched 和unbatched 版本，所以这里是二维数组
     RefCntAutoPtr<IPipelineState> m_pPSO[2][NumStates];
     RefCntAutoPtr<IBuffer> m_QuadAttribsCB;
     RefCntAutoPtr<IBuffer> m_BatchDataBuffer;
     
     
     static constexpr int NumTextures = 4;
+    // 加载NumTexture个纹理，每张纹理都有texture view,和srb
+    // 并且组装成一个texture array
     RefCntAutoPtr<IShaderResourceBinding> m_SRB[NumTextures];
     RefCntAutoPtr<IShaderResourceBinding> m_BatchSRB;
     RefCntAutoPtr<ITextureView> m_TextureSRV[NumTextures];
@@ -75,7 +83,7 @@ private:
         float Angle = 0;
         float RotSpeed = 0;
         int TextureInd = 0;
-        int StateInd = 0;
+        int StateIndex = 0;
     };
     std::vector<QuadData> m_Quads;
 
@@ -87,5 +95,6 @@ private:
     };
     
 };
+
 
 }

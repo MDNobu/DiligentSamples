@@ -45,8 +45,8 @@ namespace Diligent
 
 SampleBase* CreateSample()
 {
-    return new Tutorial09_Quads();
-    // return new QxQuads();
+    // return new Tutorial09_Quads();
+    return new QxQuads();
 }
 
 
@@ -70,7 +70,7 @@ void Tutorial09_Quads::ProcessCommandLine(const char* CmdLine)
         }
         else if (!(Arg = GetArgument(pos, "batch")).empty())
         {
-            m_BatchSize = clamp(atoi(Arg.c_str()), 1, MaxBatchSize);
+            m_BatchSize = clamp(atoi(Arg.c_str()), 0, MaxBatchSize);
         }
         else if (!(Arg = GetArgument(pos, "threads")).empty())
         {
@@ -169,7 +169,10 @@ void Tutorial09_Quads::CreatePipelineStates(std::vector<StateTransitionDesc>& Ba
         // Dynamic buffers can be frequently updated by the CPU
         CreateUniformBuffer(m_pDevice, sizeof(float4x4), "Instance constants CB", &m_QuadAttribsCB);
         // Explicitly transition the buffer to RESOURCE_STATE_CONSTANT_BUFFER state
-        Barriers.emplace_back(m_QuadAttribsCB, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_CONSTANT_BUFFER, STATE_TRANSITION_FLAG_UPDATE_STATE);
+        Barriers.emplace_back(m_QuadAttribsCB,
+            RESOURCE_STATE_UNKNOWN,
+            RESOURCE_STATE_CONSTANT_BUFFER,
+            STATE_TRANSITION_FLAG_UPDATE_STATE);
     }
 
     // Create pixel shaders
@@ -194,14 +197,16 @@ void Tutorial09_Quads::CreatePipelineStates(std::vector<StateTransitionDesc>& Ba
     PSOCreateInfo.pPS = pPS;
 
     // Define variable type that will be used by default
-    PSOCreateInfo.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
+    PSOCreateInfo.PSODesc.ResourceLayout.DefaultVariableType =
+        SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
 
     // clang-format off
     // Shader variables should typically be mutable, which means they are expected
     // to change on a per-instance basis
     ShaderResourceVariableDesc Vars[] = 
     {
-        {SHADER_TYPE_PIXEL, "g_Texture", SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE}
+        {SHADER_TYPE_PIXEL, "g_Texture",
+            SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE}
     };
     // clang-format on
     PSOCreateInfo.PSODesc.ResourceLayout.Variables    = Vars;
@@ -211,8 +216,10 @@ void Tutorial09_Quads::CreatePipelineStates(std::vector<StateTransitionDesc>& Ba
     // Define immutable sampler for g_Texture. Immutable samplers should be used whenever possible
     SamplerDesc SamLinearClampDesc
     {
-        FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, 
-        TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP
+        FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR,
+        FILTER_TYPE_LINEAR, 
+        TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP,
+        TEXTURE_ADDRESS_CLAMP
     };
     ImmutableSamplerDesc ImtblSamplers[] = 
     {
@@ -229,10 +236,12 @@ void Tutorial09_Quads::CreatePipelineStates(std::vector<StateTransitionDesc>& Ba
         // Since we did not explcitly specify the type for 'QuadAttribs' variable, default
         // type (SHADER_RESOURCE_VARIABLE_TYPE_STATIC) will be used. Static variables never
         // change and are bound directly to the pipeline state object.
-        m_pPSO[0][state]->GetStaticVariableByName(SHADER_TYPE_VERTEX, "QuadAttribs")->Set(m_QuadAttribsCB);
+        m_pPSO[0][state]->GetStaticVariableByName(
+            SHADER_TYPE_VERTEX, "QuadAttribs")->Set(m_QuadAttribsCB);
 
         if (state > 0)
-            VERIFY(m_pPSO[0][state]->IsCompatibleWith(m_pPSO[0][0]), "PSOs are expected to be compatible");
+            VERIFY(m_pPSO[0][state]->IsCompatibleWith(m_pPSO[0][0]),
+                "PSOs are expected to be compatible");
     }
 
 
@@ -300,51 +309,79 @@ void Tutorial09_Quads::LoadTextures(std::vector<StateTransitionDesc>& Barriers)
         // Copy current texture into the texture array
         for (Uint32 mip = 0; mip < TexDesc.MipLevels; ++mip)
         {
-            CopyTextureAttribs CopyAttribs(SrcTex, RESOURCE_STATE_TRANSITION_MODE_TRANSITION, pTexArray, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+            CopyTextureAttribs CopyAttribs(
+                SrcTex,
+                RESOURCE_STATE_TRANSITION_MODE_TRANSITION,
+                pTexArray,
+                RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
             CopyAttribs.SrcMipLevel = mip;
             CopyAttribs.DstMipLevel = mip;
             CopyAttribs.DstSlice    = tex;
             m_pImmediateContext->CopyTexture(CopyAttribs);
         }
         // Transition textures to shader resource state
-        Barriers.emplace_back(SrcTex, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_SHADER_RESOURCE, STATE_TRANSITION_FLAG_UPDATE_STATE);
+        Barriers.emplace_back(
+            SrcTex,
+            RESOURCE_STATE_UNKNOWN,
+            RESOURCE_STATE_SHADER_RESOURCE,
+            STATE_TRANSITION_FLAG_UPDATE_STATE);
     }
     m_TexArraySRV = pTexArray->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
 
     // Transition all textures to shader resource state
-    Barriers.emplace_back(pTexArray, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_SHADER_RESOURCE, STATE_TRANSITION_FLAG_UPDATE_STATE);
+    Barriers.emplace_back(
+        pTexArray,
+        RESOURCE_STATE_UNKNOWN,
+        RESOURCE_STATE_SHADER_RESOURCE,
+        STATE_TRANSITION_FLAG_UPDATE_STATE);
 
     // Set texture SRV in the SRB
     for (int tex = 0; tex < NumTextures; ++tex)
     {
         // Create one Shader Resource Binding for every texture
         // http://diligentgraphics.com/2016/03/23/resource-binding-model-in-diligent-engine-2-0/
-        m_pPSO[0][0]->CreateShaderResourceBinding(&m_SRB[tex], true);
-        m_SRB[tex]->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_TextureSRV[tex]);
+        m_pPSO[0][0]->CreateShaderResourceBinding(
+            &m_SRB[tex], true);
+        m_SRB[tex]->GetVariableByName(
+            SHADER_TYPE_PIXEL,
+            "g_Texture")
+                ->Set(m_TextureSRV[tex]);
     }
 
-    m_pPSO[1][0]->CreateShaderResourceBinding(&m_BatchSRB, true);
-    m_BatchSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_TexArraySRV);
+    m_pPSO[1][0]->CreateShaderResourceBinding(
+        &m_BatchSRB, true);
+    m_BatchSRB->GetVariableByName(
+        SHADER_TYPE_PIXEL, "g_Texture")->Set(
+            m_TexArraySRV);
 }
 
 void Tutorial09_Quads::UpdateUI()
 {
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    ImGui::SetNextWindowPos(ImVec2(10, 10),
+        ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Settings",
+        nullptr,
+        ImGuiWindowFlags_AlwaysAutoResize))
     {
         if (ImGui::InputInt("Num Quads", &m_NumQuads, 100, 1000, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             m_NumQuads = clamp(m_NumQuads, 1, MaxQuads);
             InitializeQuads();
         }
-        if (ImGui::InputInt("Batch Size", &m_BatchSize, 1, 5))
+        if (ImGui::InputInt("Batch Size",
+            &m_BatchSize, 1, 5))
         {
-            m_BatchSize = clamp(m_BatchSize, 1, MaxBatchSize);
+            m_BatchSize = clamp(m_BatchSize,
+                1, MaxBatchSize);
             CreateInstanceBuffer();
         }
         {
-            ImGui::ScopedDisabler Disable(m_MaxThreads == 0);
-            if (ImGui::SliderInt("Worker Threads", &m_NumWorkerThreads, 0, m_MaxThreads))
+            ImGui::ScopedDisabler Disable(
+                m_MaxThreads == 0);
+            if (ImGui::SliderInt(
+                "Worker Threads",
+                &m_NumWorkerThreads,
+                0, m_MaxThreads))
             {
                 StopWorkerThreads();
                 StartWorkerThreads(m_NumWorkerThreads);
@@ -436,14 +473,16 @@ void Tutorial09_Quads::StartWorkerThreads(size_t NumThreads)
     m_WorkerThreads.resize(NumThreads);
     for (Uint32 t = 0; t < m_WorkerThreads.size(); ++t)
     {
-        m_WorkerThreads[t] = std::thread(WorkerThreadFunc, this, t);
+        m_WorkerThreads[t] = std::thread(
+            WorkerThreadFunc, this, t);
     }
     m_CmdLists.resize(NumThreads);
 }
 
 void Tutorial09_Quads::StopWorkerThreads()
 {
-    m_RenderSubsetSignal.Trigger(true, -1);
+    m_RenderSubsetSignal.Trigger(
+        true, -1);
 
     for (auto& thread : m_WorkerThreads)
     {
@@ -457,7 +496,8 @@ void Tutorial09_Quads::StopWorkerThreads()
 void Tutorial09_Quads::WorkerThreadFunc(Tutorial09_Quads* pThis, Uint32 ThreadNum)
 {
     // Every thread should use its own deferred context
-    IDeviceContext* pDeferredCtx = pThis->m_pDeferredContexts[ThreadNum];
+    IDeviceContext* pDeferredCtx =
+        pThis->m_pDeferredContexts[ThreadNum];
 
     const int NumWorkerThreads = static_cast<int>(pThis->m_WorkerThreads.size());
     VERIFY_EXPR(NumWorkerThreads > 0);
@@ -474,7 +514,8 @@ void Tutorial09_Quads::WorkerThreadFunc(Tutorial09_Quads* pThis, Uint32 ThreadNu
         if (pThis->m_BatchSize > 1)
             pThis->RenderSubset<true>(pDeferredCtx, 1 + ThreadNum);
         else
-            pThis->RenderSubset<false>(pDeferredCtx, 1 + ThreadNum);
+            pThis->RenderSubset<false>(pDeferredCtx,
+                1 + ThreadNum);
 
         // Finish command list
         RefCntAutoPtr<ICommandList> pCmdList;
@@ -483,7 +524,9 @@ void Tutorial09_Quads::WorkerThreadFunc(Tutorial09_Quads* pThis, Uint32 ThreadNu
 
         {
             // Atomically increment the number of completed threads
-            const auto NumThreadsCompleted = pThis->m_NumThreadsCompleted.fetch_add(1) + 1;
+            const auto NumThreadsCompleted =
+                pThis->m_NumThreadsCompleted.fetch_add(
+                    1) + 1;
             if (NumThreadsCompleted == NumWorkerThreads)
                 pThis->m_ExecuteCommandListsSignal.Trigger();
         }
@@ -502,39 +545,57 @@ void Tutorial09_Quads::WorkerThreadFunc(Tutorial09_Quads* pThis, Uint32 ThreadNu
         // m_GotoNextFrameSignal must be unsignaled before we proceed to
         // RenderSubsetSignal to avoid one thread go through the loop twice in
         // a row
-        while (pThis->m_NumThreadsReady.load() < NumWorkerThreads)
+        while (pThis->m_NumThreadsReady.load() <
+            NumWorkerThreads)
             std::this_thread::yield();
-        VERIFY_EXPR(!pThis->m_GotoNextFrameSignal.IsTriggered());
+        VERIFY_EXPR(!pThis->m_GotoNextFrameSignal.
+            IsTriggered());
     }
 }
 
 template <bool UseBatch>
-void Tutorial09_Quads::RenderSubset(IDeviceContext* pCtx, Uint32 Subset)
+void Tutorial09_Quads::RenderSubset(IDeviceContext* pCtx,
+    Uint32 SubsetIndex)
 {
     // Deferred contexts start in default state. We must bind everything to the context
     // Render targets are set and transitioned to correct states by the main thread, here we only verify states
     auto* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
-    pCtx->SetRenderTargets(1, &pRTV, m_pSwapChain->GetDepthBufferDSV(), RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+    pCtx->SetRenderTargets(1, &pRTV, m_pSwapChain->GetDepthBufferDSV(),
+        RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
     if (UseBatch)
     {
         IBuffer* pBuffs[] = {m_BatchDataBuffer};
-        pCtx->SetVertexBuffers(0, _countof(pBuffs), pBuffs, nullptr, RESOURCE_STATE_TRANSITION_MODE_VERIFY, SET_VERTEX_BUFFERS_FLAG_RESET);
+        pCtx->SetVertexBuffers(
+            0,
+            _countof(pBuffs),
+            pBuffs,
+            nullptr,
+            RESOURCE_STATE_TRANSITION_MODE_VERIFY,
+            SET_VERTEX_BUFFERS_FLAG_RESET);
     }
     DrawAttribs DrawAttrs;
     DrawAttrs.Flags       = DRAW_FLAG_VERIFY_ALL;
     DrawAttrs.NumVertices = 4;
 
-    Uint32       NumSubsets   = Uint32{1} + static_cast<Uint32>(m_WorkerThreads.size());
-    const Uint32 TotalQuads   = static_cast<Uint32>(m_Quads.size());
-    const Uint32 TotalBatches = (TotalQuads + m_BatchSize - 1) / m_BatchSize;
+    Uint32       NumSubsets   = Uint32{1} +
+        static_cast<Uint32>(m_WorkerThreads.size());
+    const Uint32 TotalQuads   = static_cast<Uint32>(
+        m_Quads.size());
+    const Uint32 TotalBatches = (TotalQuads +
+        m_BatchSize - 1) / m_BatchSize;
     const Uint32 SusbsetSize  = TotalBatches / NumSubsets;
-    const Uint32 StartBatch   = SusbsetSize * Subset;
-    const Uint32 EndBatch     = (Subset < NumSubsets - 1) ? SusbsetSize * (Subset + 1) : TotalBatches;
-    for (Uint32 batch = StartBatch; batch < EndBatch; ++batch)
+    const Uint32 StartBatch   = SusbsetSize * SubsetIndex;
+    const Uint32 EndBatch     = (SubsetIndex < NumSubsets - 1) ?
+        SusbsetSize * (SubsetIndex + 1) : TotalBatches;
+    for (Uint32 batch = StartBatch;
+        batch < EndBatch; ++batch)
     {
         const Uint32 StartInst = batch * m_BatchSize;
-        const Uint32 EndInst   = std::min(StartInst + static_cast<Uint32>(m_BatchSize), static_cast<Uint32>(m_NumQuads));
+        const Uint32 EndInst   = std::min(
+            StartInst + static_cast<Uint32>(
+                m_BatchSize),
+                static_cast<Uint32>(m_NumQuads));
 
         // Set the pipeline state
         auto StateInd = m_Quads[StartInst].StateInd;
@@ -543,8 +604,11 @@ void Tutorial09_Quads::RenderSubset(IDeviceContext* pCtx, Uint32 Subset)
         MapHelper<InstanceData> BatchData;
         if (UseBatch)
         {
-            pCtx->CommitShaderResources(m_BatchSRB, RESOURCE_STATE_TRANSITION_MODE_VERIFY);
-            BatchData.Map(pCtx, m_BatchDataBuffer, MAP_WRITE, MAP_FLAG_DISCARD);
+            pCtx->CommitShaderResources(
+                m_BatchSRB,
+                RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+            BatchData.Map(pCtx, m_BatchDataBuffer,
+                MAP_WRITE, MAP_FLAG_DISCARD);
         }
 
         for (Uint32 inst = StartInst; inst < EndInst; ++inst)
@@ -556,7 +620,9 @@ void Tutorial09_Quads::RenderSubset(IDeviceContext* pCtx, Uint32 Subset)
             // verify that all resources are in correct states. This mode only has effect
             // in debug and development builds
             if (!UseBatch)
-                pCtx->CommitShaderResources(m_SRB[CurrInstData.TextureInd], RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+                pCtx->CommitShaderResources(
+                    m_SRB[CurrInstData.TextureInd],
+                    RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
             {
                 // clang-format off
@@ -572,14 +638,20 @@ void Tutorial09_Quads::RenderSubset(IDeviceContext* pCtx, Uint32 Subset)
                                  sinAngle, cosAngle);
                 auto     Matr = ScaleMatr * RotMatr;
 
-                float4 QuadRotationAndScale(Matr.m00, Matr.m10, Matr.m01, Matr.m11);
+                float4 QuadRotationAndScale(
+                    Matr.m00, Matr.m10,
+                    Matr.m01, Matr.m11);
 
                 if (UseBatch)
                 {
-                    auto& CurrQuad                = BatchData[inst - StartInst];
-                    CurrQuad.QuadRotationAndScale = QuadRotationAndScale;
-                    CurrQuad.QuadCenter           = CurrInstData.Pos;
-                    CurrQuad.TexArrInd            = static_cast<float>(CurrInstData.TextureInd);
+                    auto& CurrQuad
+                    = BatchData[inst - StartInst];
+                    CurrQuad.QuadRotationAndScale =
+                        QuadRotationAndScale;
+                    CurrQuad.QuadCenter           =
+                        CurrInstData.Pos;
+                    CurrQuad.TexArrInd            =
+                        static_cast<float>(CurrInstData.TextureInd);
                 }
                 else
                 {
@@ -590,11 +662,16 @@ void Tutorial09_Quads::RenderSubset(IDeviceContext* pCtx, Uint32 Subset)
                     };
 
                     // Map the buffer and write current world-view-projection matrix
-                    MapHelper<QuadAttribs> InstData(pCtx, m_QuadAttribsCB, MAP_WRITE, MAP_FLAG_DISCARD);
+                    MapHelper<QuadAttribs> InstData(
+                        pCtx, m_QuadAttribsCB,
+                        MAP_WRITE, MAP_FLAG_DISCARD);
 
-                    InstData->g_QuadRotationAndScale = QuadRotationAndScale;
-                    InstData->g_QuadCenter.x         = CurrInstData.Pos.x;
-                    InstData->g_QuadCenter.y         = CurrInstData.Pos.y;
+                    InstData->g_QuadRotationAndScale =
+                        QuadRotationAndScale;
+                    InstData->g_QuadCenter.x         =
+                        CurrInstData.Pos.x;
+                    InstData->g_QuadCenter.y         =
+                        CurrInstData.Pos.y;
                 }
             }
         }
@@ -614,8 +691,10 @@ void Tutorial09_Quads::Render()
     auto* pDSV = m_pSwapChain->GetDepthBufferDSV();
     // Clear the back buffer
     const float ClearColor[] = {0.350f, 0.350f, 0.350f, 1.0f};
-    m_pImmediateContext->ClearRenderTarget(pRTV, ClearColor, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    m_pImmediateContext->ClearDepthStencil(pDSV, CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pImmediateContext->ClearRenderTarget(pRTV, ClearColor,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pImmediateContext->ClearDepthStencil(pDSV,
+    CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     if (!m_WorkerThreads.empty())
     {
@@ -636,7 +715,8 @@ void Tutorial09_Quads::Render()
         for (Uint32 i = 0; i < m_CmdLists.size(); ++i)
             m_CmdListPtrs[i] = m_CmdLists[i];
 
-        m_pImmediateContext->ExecuteCommandLists(static_cast<Uint32>(m_CmdListPtrs.size()), m_CmdListPtrs.data());
+        m_pImmediateContext->ExecuteCommandLists(static_cast<Uint32>(m_CmdListPtrs.size()),
+            m_CmdListPtrs.data());
 
         for (auto& cmdList : m_CmdLists)
         {
@@ -663,7 +743,10 @@ void Tutorial09_Quads::CreateInstanceBuffer()
     InstBuffDesc.Size           = sizeof(InstanceData) * m_BatchSize;
     m_BatchDataBuffer.Release();
     m_pDevice->CreateBuffer(InstBuffDesc, nullptr, &m_BatchDataBuffer);
-    StateTransitionDesc Barrier(m_BatchDataBuffer, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_VERTEX_BUFFER, STATE_TRANSITION_FLAG_UPDATE_STATE);
+    StateTransitionDesc Barrier(m_BatchDataBuffer,
+        RESOURCE_STATE_UNKNOWN,
+        RESOURCE_STATE_VERTEX_BUFFER,
+        STATE_TRANSITION_FLAG_UPDATE_STATE);
     m_pImmediateContext->TransitionResourceStates(1, &Barrier);
 }
 

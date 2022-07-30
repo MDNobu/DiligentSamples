@@ -63,7 +63,7 @@ private:
     void StartWorkerThreads(size_t NumThreads);
     void StopWorkerThreads();
     template <bool UseBatch>
-    void RenderSubset(IDeviceContext* pCtx, Uint32 Subset);
+    void RenderSubset(IDeviceContext* pCtx, Uint32 SubsetIndex);
 
     static void WorkerThreadFunc(Tutorial09_Quads* pThis, Uint32 ThreadNum);
 
