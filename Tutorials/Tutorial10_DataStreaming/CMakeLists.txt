@@ -4,10 +4,12 @@ project(Tutorial10_DataStreaming CXX)
 
 set(SOURCE
     src/Tutorial10_DataStreaming.cpp
+    src/QxDataStreaming.cpp
 )
 
 set(INCLUDE
     src/Tutorial10_DataStreaming.hpp
+    src/QxDataStreaming.h
 )
 
 set(SHADERS
@@ -15,6 +17,10 @@ set(SHADERS
     assets/polygon.psh
     assets/polygon_batch.vsh
     assets/polygon_batch.psh
+    assets/QxPolygon.vsh
+    assets/QxPolygon.psh
+    assets/QxPolygonBatch.psh
+    assets/QxPolygonBatch.vsh
 )
 
 set(ASSETS

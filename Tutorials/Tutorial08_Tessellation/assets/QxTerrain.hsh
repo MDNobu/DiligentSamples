@@ -12,3 +12,27 @@ cbuffer HSConstants
 # define BLOCK_SIZE 32
 #endif
 
+TerrainHSConstFuncOut ConstatntHS(
+    InputPatch<TerrainVSOut, 1> inputPath/*,uint BlockID : SV_PrimitivID*/
+)
+{
+    TerrainHSConstFuncOut Out;
+    if(g_Constants.AdaptiveTessellation != 0)
+    {
+        float2 blockOffset = inputPath[0].BlockOffset;
+        float4 UV = float4(0., 0., 1., 1.) / 
+            float2(g_Constants.fNumHorzBlocks, g_Constants.fNumVertBlocks).xyxy
+            + blockOffset.xyxy;
+
+        float2 leftEdgeCntrUV = 
+            float2(UV.x, (UV.y + UV.w) / 2.0);
+        float2 rightEdgetCntrUV = 
+            float2(UV.z, (UV.y + UV.w) / 2.0);
+
+        float2 btmEdgeCntrUV = float2((UV.x + UV.z) / 2.0
+            , UV.y);
+        float2 topEdgeCntrUV = 
+            float2((UV.x + UV.z) / 2., UV.w);
+            
+    }
+}
