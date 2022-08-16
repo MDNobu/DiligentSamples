@@ -65,7 +65,8 @@ private:
     RefCntAutoPtr<IBuffer>        m_VSConstants;
     RefCntAutoPtr<IBuffer>        m_TextureUpdateBuffer;
 
-    void DrawCube(const float4x4& WVPMatrix, IBuffer* pVertexBuffer, IShaderResourceBinding* pSRB);
+    void DrawCube(const float4x4& WVPMatrix, IBuffer* pVertexBuffer,
+        IShaderResourceBinding* pSRB);
 
     static constexpr const size_t NumTextures         = 4;
     static constexpr const Uint32 MaxUpdateRegionSize = 128;

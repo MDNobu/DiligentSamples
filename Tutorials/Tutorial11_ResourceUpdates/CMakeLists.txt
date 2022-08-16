@@ -4,15 +4,19 @@ project(Tutorial11_ResourceUpdates CXX)
 
 set(SOURCE
     src/Tutorial11_ResourceUpdates.cpp
+    src/QxResourceUpdates.cpp
 )
 
 set(INCLUDE
     src/Tutorial11_ResourceUpdates.hpp
+    src/QxResourceUpdates.h
 )
 
 set(SHADERS
     assets/cube.vsh
     assets/cube.psh
+    assets/QxCubePS.hlsl
+    assets/QxCubeVS.hlsl
 )
 
 set(ASSETS

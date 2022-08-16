@@ -151,7 +151,9 @@ void Tutorial11_ResourceUpdates::CreatePipelineStates()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Cube VS";
-        ShaderCI.FilePath        = "cube.vsh";
+        // ShaderCI.FilePath        = "cube.vsh";
+        ShaderCI.FilePath        = "QxCubeVS.hlsl";
+
         m_pDevice->CreateShader(ShaderCI, &pVS);
         // Create dynamic uniform buffer that will store our transformation matrix
         // Dynamic buffers can be frequently updated by the CPU
@@ -164,7 +166,9 @@ void Tutorial11_ResourceUpdates::CreatePipelineStates()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Cube PS";
-        ShaderCI.FilePath        = "cube.psh";
+        // ShaderCI.FilePath        = "cube.psh";
+        ShaderCI.FilePath        = "QxCubePS.hlsl";
+
         m_pDevice->CreateShader(ShaderCI, &pPS);
     }
 
@@ -340,7 +344,10 @@ void Tutorial11_ResourceUpdates::DrawCube(const float4x4& WVPMatrix, Diligent::I
 {
     // Bind vertex buffer
     IBuffer* pBuffs[] = {pVertexBuffer};
-    m_pImmediateContext->SetVertexBuffers(0, 1, pBuffs, nullptr, RESOURCE_STATE_TRANSITION_MODE_TRANSITION, SET_VERTEX_BUFFERS_FLAG_RESET);
+    m_pImmediateContext->SetVertexBuffers(0, 1,
+        pBuffs, nullptr,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION,
+        SET_VERTEX_BUFFERS_FLAG_RESET);
     m_pImmediateContext->SetIndexBuffer(m_CubeIndexBuffer, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     // Commit shader resources. RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode
@@ -349,7 +356,9 @@ void Tutorial11_ResourceUpdates::DrawCube(const float4x4& WVPMatrix, Diligent::I
 
     {
         // Map the buffer and write current world-view-projection matrix
-        MapHelper<float4x4> CBConstants(m_pImmediateContext, m_VSConstants, MAP_WRITE, MAP_FLAG_DISCARD);
+        MapHelper<float4x4> CBConstants(
+            m_pImmediateContext, m_VSConstants,
+            MAP_WRITE, MAP_FLAG_DISCARD);
         *CBConstants = WVPMatrix.Transpose();
     }
 
@@ -384,13 +393,23 @@ void Tutorial11_ResourceUpdates::Render()
 
     auto CubeRotation = float4x4::RotationY(static_cast<float>(m_CurrTime) * 0.5f) * float4x4::RotationX(-PI_F * 0.1f) * float4x4::Translation(0, 0, 12.0f);
 
-    DrawCube(CubeRotation * float4x4::Translation(-2.f, -2.f, 0.f) * ViewProj, m_CubeVertexBuffer[0], m_SRBs[2]);
-    DrawCube(CubeRotation * float4x4::Translation(+2.f, -2.f, 0.f) * ViewProj, m_CubeVertexBuffer[0], m_SRBs[3]);
+    DrawCube(CubeRotation *
+        float4x4::Translation(-2.f, -2.f, 0.f) *
+        ViewProj, m_CubeVertexBuffer[0], m_SRBs[2]);
+    DrawCube(CubeRotation *
+        float4x4::Translation(+2.f, -2.f, 0.f)
+        * ViewProj, m_CubeVertexBuffer[0], m_SRBs[3]);
 
-    DrawCube(CubeRotation * float4x4::Translation(-4.f, +2.f, 0.f) * ViewProj, m_CubeVertexBuffer[0], m_SRBs[0]);
+    DrawCube(CubeRotation *
+        float4x4::Translation(-4.f, +2.f, 0.f) *
+        ViewProj, m_CubeVertexBuffer[0], m_SRBs[0]);
     m_pImmediateContext->SetPipelineState(m_pPSO_NoCull);
-    DrawCube(CubeRotation * float4x4::Translation(0.f, +2.f, 0.f) * ViewProj, m_CubeVertexBuffer[1], m_SRBs[0]);
-    DrawCube(CubeRotation * float4x4::Translation(+4.f, +2.f, 0.f) * ViewProj, m_CubeVertexBuffer[2], m_SRBs[1]);
+    DrawCube(CubeRotation *
+        float4x4::Translation(0.f, +2.f, 0.f) *
+        ViewProj, m_CubeVertexBuffer[1], m_SRBs[0]);
+    DrawCube(CubeRotation *
+        float4x4::Translation(+4.f, +2.f, 0.f) *
+        ViewProj, m_CubeVertexBuffer[2], m_SRBs[1]);
 }
 
 void Tutorial11_ResourceUpdates::WriteStripPattern(Uint8* pData, Uint32 Width, Uint32 Height, Uint64 Stride)
@@ -484,14 +503,16 @@ void Tutorial11_ResourceUpdates::MapTexture(Uint32 TexIndex, bool MapEntireTextu
 void Tutorial11_ResourceUpdates::UpdateBuffer(Diligent::Uint32 BufferIndex)
 {
     Uint32 NumVertsToUpdate  = std::uniform_int_distribution<Uint32>{2, 8}(m_gen);
-    Uint32 FirstVertToUpdate = std::uniform_int_distribution<Uint32>{0, static_cast<Uint32>(_countof(CubeVerts)) - NumVertsToUpdate}(m_gen);
+    Uint32 FirstVertToUpdate = std::uniform_int_distribution<Uint32>{0,
+        static_cast<Uint32>(_countof(CubeVerts)) - NumVertsToUpdate}(m_gen);
     Vertex Vertices[_countof(CubeVerts)];
     for (Uint32 v = 0; v < NumVertsToUpdate; ++v)
     {
         auto        SrcInd  = FirstVertToUpdate + v;
         const auto& SrcVert = CubeVerts[SrcInd];
         Vertices[v].uv      = SrcVert.uv;
-        Vertices[v].pos     = SrcVert.pos * static_cast<float>(1 + 0.2 * sin(m_CurrTime * (1.0 + SrcInd * 0.2)));
+        Vertices[v].pos     = SrcVert.pos *
+            static_cast<float>(1 + 0.2 * sin(m_CurrTime * (1.0 + SrcInd * 0.2)));
     }
     m_pImmediateContext->UpdateBuffer(
         m_CubeVertexBuffer[BufferIndex],    // Device context to use for the operation
@@ -538,7 +559,8 @@ void Tutorial11_ResourceUpdates::Update(double CurrTime, double ElapsedTime)
 
     static constexpr const double MapTexturePeriod = 0.05;
     const auto&                   deviceType       = m_pDevice->GetDeviceInfo().Type;
-    if (CurrTime - m_LastMapTime > MapTexturePeriod * (deviceType == RENDER_DEVICE_TYPE_D3D11 ? 10.f : 1.f))
+    if (CurrTime - m_LastMapTime > MapTexturePeriod *
+        (deviceType == RENDER_DEVICE_TYPE_D3D11 ? 10.f : 1.f))
     {
         m_LastMapTime = CurrTime;
         if (deviceType == RENDER_DEVICE_TYPE_D3D11 ||
