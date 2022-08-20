@@ -55,16 +55,20 @@ void Tutorial13_ShadowMap::CreateCubePSO()
     CubePsoCI.RTVFormat            = m_pSwapChain->GetDesc().ColorBufferFormat;
     CubePsoCI.DSVFormat            = m_pSwapChain->GetDesc().DepthBufferFormat;
     CubePsoCI.pShaderSourceFactory = pShaderSourceFactory;
-    CubePsoCI.VSFilePath           = "cube.vsh";
-    CubePsoCI.PSFilePath           = "cube.psh";
-    CubePsoCI.Components           = TexturedCube::VERTEX_COMPONENT_FLAG_POS_NORM_UV;
+    // CubePsoCI.VSFilePath           = "cube.vsh";
+    // CubePsoCI.PSFilePath           = "cube.psh";
+    CubePsoCI.VSFilePath = "QxCubeVS.hlsl";
+    CubePsoCI.PSFilePath = "QxCubePS.hlsl";
+    CubePsoCI.Components           =
+        TexturedCube::VERTEX_COMPONENT_FLAG_POS_NORM_UV;
 
     m_pCubePSO = TexturedCube::CreatePipelineState(CubePsoCI);
 
     // Since we did not explcitly specify the type for 'Constants' variable, default
     // type (SHADER_RESOURCE_VARIABLE_TYPE_STATIC) will be used. Static variables never
     // change and are bound directly through the pipeline state object.
-    m_pCubePSO->GetStaticVariableByName(SHADER_TYPE_VERTEX, "Constants")->Set(m_VSConstants);
+    m_pCubePSO->GetStaticVariableByName(SHADER_TYPE_VERTEX,
+        "Constants")->Set(m_VSConstants);
 
     // Since we are using mutable variable, we must create a shader resource binding object
     // http://diligentgraphics.com/2016/03/23/resource-binding-model-in-diligent-engine-2-0/
@@ -82,12 +86,16 @@ void Tutorial13_ShadowMap::CreateCubePSO()
     // clang-format off
     // Shadow pass doesn't use any render target outputs
     PSOCreateInfo.GraphicsPipeline.NumRenderTargets             = 0;
-    PSOCreateInfo.GraphicsPipeline.RTVFormats[0]                = TEX_FORMAT_UNKNOWN;
+    PSOCreateInfo.GraphicsPipeline.RTVFormats[0]                =
+        TEX_FORMAT_UNKNOWN;
     // The DSV format is the shadow map format
-    PSOCreateInfo.GraphicsPipeline.DSVFormat                    = m_ShadowMapFormat;
-    PSOCreateInfo.GraphicsPipeline.PrimitiveTopology            = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    PSOCreateInfo.GraphicsPipeline.DSVFormat                    =
+        m_ShadowMapFormat;
+    PSOCreateInfo.GraphicsPipeline.PrimitiveTopology            =
+        PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     // Cull back faces
-    PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode      = CULL_MODE_BACK;
+    PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode      =
+        CULL_MODE_BACK;
     // Enable depth testing
     PSOCreateInfo.GraphicsPipeline.DepthStencilDesc.DepthEnable = True;
     // clang-format on
@@ -105,7 +113,8 @@ void Tutorial13_ShadowMap::CreateCubePSO()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Cube Shadow VS";
-        ShaderCI.FilePath        = "cube_shadow.vsh";
+        // ShaderCI.FilePath        = "cube_shadow.vsh";
+        ShaderCI.FilePath = "QxCubeShadowVS.hlsl";
         m_pDevice->CreateShader(ShaderCI, &pShadowVS);
     }
     PSOCreateInfo.pVS = pShadowVS;
@@ -195,7 +204,8 @@ void Tutorial13_ShadowMap::CreatePlanePSO()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Plane VS";
-        ShaderCI.FilePath        = "plane.vsh";
+        // ShaderCI.FilePath        = "plane.vsh";
+        ShaderCI.FilePath = "QxPlaneVS.hlsl";
         m_pDevice->CreateShader(ShaderCI, &pPlaneVS);
     }
 
@@ -205,7 +215,8 @@ void Tutorial13_ShadowMap::CreatePlanePSO()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Plane PS";
-        ShaderCI.FilePath        = "plane.psh";
+        // ShaderCI.FilePath        = "plane.psh";
+        ShaderCI.FilePath = "QxPlanePS.hlsl";
         m_pDevice->CreateShader(ShaderCI, &pPlanePS);
     }
 
@@ -235,7 +246,8 @@ void Tutorial13_ShadowMap::CreatePlanePSO()
     // clang-format off
     ImmutableSamplerDesc ImtblSamplers[] =
     {
-        {SHADER_TYPE_PIXEL, "g_ShadowMap", ComparsionSampler}
+        {SHADER_TYPE_PIXEL,
+            "g_ShadowMap", ComparsionSampler}
     };
     // clang-format on
     PSOCreateInfo.PSODesc.ResourceLayout.ImmutableSamplers    = ImtblSamplers;
@@ -357,8 +369,13 @@ void Tutorial13_ShadowMap::Initialize(const SampleInitInfo& InitInfo)
     std::vector<StateTransitionDesc> Barriers;
     // Create dynamic uniform buffer that will store our transformation matrices
     // Dynamic buffers can be frequently updated by the CPU
-    CreateUniformBuffer(m_pDevice, sizeof(float4x4) * 2 + sizeof(float4), "VS constants CB", &m_VSConstants);
-    Barriers.emplace_back(m_VSConstants, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_CONSTANT_BUFFER, STATE_TRANSITION_FLAG_UPDATE_STATE);
+    CreateUniformBuffer(m_pDevice,
+        sizeof(float4x4) * 2 + sizeof(float4),
+        "VS constants CB", &m_VSConstants);
+    Barriers.emplace_back(m_VSConstants,
+        RESOURCE_STATE_UNKNOWN,
+        RESOURCE_STATE_CONSTANT_BUFFER,
+        STATE_TRANSITION_FLAG_UPDATE_STATE);
 
     CreateCubePSO();
     CreatePlanePSO();
@@ -367,21 +384,40 @@ void Tutorial13_ShadowMap::Initialize(const SampleInitInfo& InitInfo)
     // Load cube
 
     // In this tutorial we need vertices with normals
-    m_CubeVertexBuffer = TexturedCube::CreateVertexBuffer(m_pDevice, TexturedCube::VERTEX_COMPONENT_FLAG_POS_NORM_UV);
+    m_CubeVertexBuffer = TexturedCube::CreateVertexBuffer(
+        m_pDevice,
+        TexturedCube::VERTEX_COMPONENT_FLAG_POS_NORM_UV);
     // Load index buffer
-    m_CubeIndexBuffer = TexturedCube::CreateIndexBuffer(m_pDevice);
+    m_CubeIndexBuffer = TexturedCube::CreateIndexBuffer(
+        m_pDevice);
     // Explicitly transition vertex and index buffers to required states
-    Barriers.emplace_back(m_CubeVertexBuffer, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_VERTEX_BUFFER, STATE_TRANSITION_FLAG_UPDATE_STATE);
-    Barriers.emplace_back(m_CubeIndexBuffer, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_INDEX_BUFFER, STATE_TRANSITION_FLAG_UPDATE_STATE);
+    Barriers.emplace_back(m_CubeVertexBuffer,
+        RESOURCE_STATE_UNKNOWN,
+        RESOURCE_STATE_VERTEX_BUFFER,
+        STATE_TRANSITION_FLAG_UPDATE_STATE);
+    Barriers.emplace_back(m_CubeIndexBuffer,
+        RESOURCE_STATE_UNKNOWN,
+        RESOURCE_STATE_INDEX_BUFFER,
+        STATE_TRANSITION_FLAG_UPDATE_STATE);
     // Load texture
-    auto CubeTexture = TexturedCube::LoadTexture(m_pDevice, "DGLogo.png");
-    m_CubeSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(CubeTexture->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE));
+    auto CubeTexture = TexturedCube::LoadTexture(
+        m_pDevice, "DGLogo.png");
+    m_CubeSRB->GetVariableByName(SHADER_TYPE_PIXEL,
+        "g_Texture")->Set(
+            CubeTexture->GetDefaultView(
+                TEXTURE_VIEW_SHADER_RESOURCE));
     // Transition the texture to shader resource state
-    Barriers.emplace_back(CubeTexture, RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_SHADER_RESOURCE, STATE_TRANSITION_FLAG_UPDATE_STATE);
+    Barriers.emplace_back(CubeTexture,
+        RESOURCE_STATE_UNKNOWN,
+        RESOURCE_STATE_SHADER_RESOURCE,
+        STATE_TRANSITION_FLAG_UPDATE_STATE);
 
     CreateShadowMap();
 
-    m_pImmediateContext->TransitionResourceStates(static_cast<Uint32>(Barriers.size()), Barriers.data());
+    m_pImmediateContext->TransitionResourceStates(
+        static_cast<Uint32>(
+            Barriers.size()),
+            Barriers.data());
 }
 
 void Tutorial13_ShadowMap::CreateShadowMap()

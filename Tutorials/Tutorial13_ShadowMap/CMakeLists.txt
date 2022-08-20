@@ -4,11 +4,13 @@ project(Tutorial13_ShadowMap CXX)
 
 set(SOURCE
     src/Tutorial13_ShadowMap.cpp
+    src/QxShadowMap.cpp
     ../Common/src/TexturedCube.cpp
 )
 
 set(INCLUDE
     src/Tutorial13_ShadowMap.hpp
+    src/QxShadowMap.h
     ../Common/src/TexturedCube.hpp
 )
 
@@ -21,6 +23,14 @@ set(SHADERS
     assets/shadow_map_vis.vsh
     assets/shadow_map_vis.psh
     assets/structures.fxh
+    assets/QxCubeVS.hlsl
+    assets/QxCubePS.hlsl
+    assets/QxPlanePS.hlsl
+    assets/QxPlaneVS.hlsl
+    assets/QxShadowMapPS.hlsl
+    assets/QxShadowMapVS.hlsl
+    assets/QxStructures.hlsl
+    assets/QxCubeShadowVS.hlsl
 )
 
 set(ASSETS
