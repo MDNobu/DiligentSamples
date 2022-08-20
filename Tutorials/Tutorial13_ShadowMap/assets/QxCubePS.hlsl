@@ -1,7 +1,7 @@
 #include "QxStructures.hlsl"
 
 Texture2D g_Texture;
-SamplerState g_texture_sampler;
+SamplerState g_Texture_sampler;
 
 struct PSOutput
 {
@@ -15,6 +15,6 @@ void main(
 {
     PSOut.Color =
         g_Texture.Sample(
-            g_texture_sampler, PSIn.UV)
+            g_Texture_sampler, PSIn.UV)
             * (PSIn.NdotL * 0.8 + 0.2);
 }

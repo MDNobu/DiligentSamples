@@ -35,13 +35,15 @@
 #include "imgui.h"
 #include "ImGuiUtils.hpp"
 #include "imGuIZMO.h"
+#include "QxShadowMap.h"
 
 namespace Diligent
 {
 
 SampleBase* CreateSample()
 {
-    return new Tutorial13_ShadowMap();
+    // return new Tutorial13_ShadowMap();
+    return new QxShadowMap();
 }
 
 void Tutorial13_ShadowMap::CreateCubePSO()
@@ -274,9 +276,11 @@ void Tutorial13_ShadowMap::CreateShadowMapVisPSO()
     // This tutorial renders to a single render target
     PSOCreateInfo.GraphicsPipeline.NumRenderTargets             = 1;
     // Set render target format which is the format of the swap chain's color buffer
-    PSOCreateInfo.GraphicsPipeline.RTVFormats[0]                = m_pSwapChain->GetDesc().ColorBufferFormat;
+    PSOCreateInfo.GraphicsPipeline.RTVFormats[0]                =
+        m_pSwapChain->GetDesc().ColorBufferFormat;
     // Set depth buffer format which is the format of the swap chain's back buffer
-    PSOCreateInfo.GraphicsPipeline.DSVFormat                    = m_pSwapChain->GetDesc().DepthBufferFormat;
+    PSOCreateInfo.GraphicsPipeline.DSVFormat                    =
+        m_pSwapChain->GetDesc().DepthBufferFormat;
     // Primitive topology defines what kind of primitives will be rendered by this pipeline state
     PSOCreateInfo.GraphicsPipeline.PrimitiveTopology            = PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     // No cull
@@ -295,7 +299,8 @@ void Tutorial13_ShadowMap::CreateShadowMapVisPSO()
 
     // Create a shader source stream factory to load shaders from files.
     RefCntAutoPtr<IShaderSourceInputStreamFactory> pShaderSourceFactory;
-    m_pEngineFactory->CreateDefaultShaderSourceStreamFactory(nullptr, &pShaderSourceFactory);
+    m_pEngineFactory->CreateDefaultShaderSourceStreamFactory(
+        nullptr, &pShaderSourceFactory);
     ShaderCI.pShaderSourceStreamFactory = pShaderSourceFactory;
     // Create shadow map visualization vertex shader
     RefCntAutoPtr<IShader> pShadowMapVisVS;
@@ -321,7 +326,8 @@ void Tutorial13_ShadowMap::CreateShadowMapVisPSO()
     PSOCreateInfo.pPS = pShadowMapVisPS;
 
     // Define variable type that will be used by default
-    PSOCreateInfo.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE;
+    PSOCreateInfo.PSODesc.ResourceLayout.DefaultVariableType =
+        SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE;
 
     // clang-format off
     SamplerDesc SamLinearClampDesc
@@ -337,7 +343,8 @@ void Tutorial13_ShadowMap::CreateShadowMapVisPSO()
     PSOCreateInfo.PSODesc.ResourceLayout.ImmutableSamplers    = ImtblSamplers;
     PSOCreateInfo.PSODesc.ResourceLayout.NumImmutableSamplers = _countof(ImtblSamplers);
 
-    m_pDevice->CreateGraphicsPipelineState(PSOCreateInfo, &m_pShadowMapVisPSO);
+    m_pDevice->CreateGraphicsPipelineState(
+        PSOCreateInfo, &m_pShadowMapVisPSO);
 }
 
 void Tutorial13_ShadowMap::UpdateUI()
@@ -357,7 +364,8 @@ void Tutorial13_ShadowMap::UpdateUI()
             m_ShadowMapSize = MinShadowMapSize << ShadowMapComboId;
             CreateShadowMap();
         }
-        ImGui::gizmo3D("##LightDirection", m_LightDirection, ImGui::GetTextLineHeight() * 10);
+        ImGui::gizmo3D("##LightDirection", m_LightDirection
+            , ImGui::GetTextLineHeight() * 10);
     }
     ImGui::End();
 }
@@ -437,11 +445,14 @@ void Tutorial13_ShadowMap::CreateShadowMap()
     // Create SRBs that use shadow map as mutable variable
     m_PlaneSRB.Release();
     m_pPlanePSO->CreateShaderResourceBinding(&m_PlaneSRB, true);
-    m_PlaneSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_ShadowMap")->Set(m_ShadowMapSRV);
+    m_PlaneSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_ShadowMap")->
+        Set(m_ShadowMapSRV);
 
     m_ShadowMapVisSRB.Release();
-    m_pShadowMapVisPSO->CreateShaderResourceBinding(&m_ShadowMapVisSRB, true);
-    m_ShadowMapVisSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_ShadowMap")->Set(m_ShadowMapSRV);
+    m_pShadowMapVisPSO->CreateShaderResourceBinding(&m_ShadowMapVisSRB,
+        true);
+    m_ShadowMapVisSRB->GetVariableByName(SHADER_TYPE_PIXEL,
+        "g_ShadowMap")->Set(m_ShadowMapSRV);
 }
 
 void Tutorial13_ShadowMap::RenderShadowMap()
@@ -449,7 +460,10 @@ void Tutorial13_ShadowMap::RenderShadowMap()
     float3 f3LightSpaceX, f3LightSpaceY, f3LightSpaceZ;
     f3LightSpaceZ = normalize(m_LightDirection);
 
-    auto min_cmp = std::min(std::min(std::abs(m_LightDirection.x), std::abs(m_LightDirection.y)), std::abs(m_LightDirection.z));
+    auto min_cmp = std::min(std::min(
+        std::abs(m_LightDirection.x),
+        std::abs(m_LightDirection.y)),
+        std::abs(m_LightDirection.z));
     if (min_cmp == std::abs(m_LightDirection.x))
         f3LightSpaceX = float3(1, 0, 0);
     else if (min_cmp == std::abs(m_LightDirection.y))
@@ -462,7 +476,8 @@ void Tutorial13_ShadowMap::RenderShadowMap()
     f3LightSpaceX = normalize(f3LightSpaceX);
     f3LightSpaceY = normalize(f3LightSpaceY);
 
-    float4x4 WorldToLightViewSpaceMatr = float4x4::ViewFromBasis(f3LightSpaceX, f3LightSpaceY, f3LightSpaceZ);
+    float4x4 WorldToLightViewSpaceMatr = float4x4::ViewFromBasis(
+        f3LightSpaceX, f3LightSpaceY, f3LightSpaceZ);
 
     // For this tutorial we know that the scene center is at (0,0,0).
     // Real applications will want to compute tight bounds
@@ -470,7 +485,8 @@ void Tutorial13_ShadowMap::RenderShadowMap()
     float3 f3SceneCenter = float3(0, 0, 0);
     float  SceneRadius   = std::sqrt(3.f);
     float3 f3MinXYZ      = f3SceneCenter - float3(SceneRadius, SceneRadius, SceneRadius);
-    float3 f3MaxXYZ      = f3SceneCenter + float3(SceneRadius, SceneRadius, SceneRadius * 5);
+    float3 f3MaxXYZ      = f3SceneCenter + float3(SceneRadius, SceneRadius,
+        SceneRadius * 5);
     float3 f3SceneExtent = f3MaxXYZ - f3MinXYZ;
 
     const auto& DevInfo = m_pDevice->GetDeviceInfo();
@@ -486,8 +502,10 @@ void Tutorial13_ShadowMap::RenderShadowMap()
     f4LightSpaceScaledBias.y = -f3MinXYZ.y * f4LightSpaceScale.y - 1.f;
     f4LightSpaceScaledBias.z = -f3MinXYZ.z * f4LightSpaceScale.z + (IsGL ? -1.f : 0.f);
 
-    float4x4 ScaleMatrix      = float4x4::Scale(f4LightSpaceScale.x, f4LightSpaceScale.y, f4LightSpaceScale.z);
-    float4x4 ScaledBiasMatrix = float4x4::Translation(f4LightSpaceScaledBias.x, f4LightSpaceScaledBias.y, f4LightSpaceScaledBias.z);
+    float4x4 ScaleMatrix      =
+        float4x4::Scale(f4LightSpaceScale.x, f4LightSpaceScale.y, f4LightSpaceScale.z);
+    float4x4 ScaledBiasMatrix =
+        float4x4::Translation(f4LightSpaceScaledBias.x, f4LightSpaceScaledBias.y, f4LightSpaceScaledBias.z);
 
     // Note: bias is applied after scaling!
     float4x4 ShadowProjMatr = ScaleMatrix * ScaledBiasMatrix;
@@ -496,10 +514,12 @@ void Tutorial13_ShadowMap::RenderShadowMap()
     float4x4 WorldToLightProjSpaceMatr = WorldToLightViewSpaceMatr * ShadowProjMatr;
 
     const auto& NDCAttribs    = DevInfo.GetNDCAttribs();
-    float4x4    ProjToUVScale = float4x4::Scale(0.5f, NDCAttribs.YtoVScale, NDCAttribs.ZtoDepthScale);
+    float4x4    ProjToUVScale = float4x4::Scale(
+        0.5f, NDCAttribs.YtoVScale, NDCAttribs.ZtoDepthScale);
     float4x4    ProjToUVBias  = float4x4::Translation(0.5f, 0.5f, NDCAttribs.GetZtoDepthBias());
 
-    m_WorldToShadowMapUVDepthMatr = WorldToLightProjSpaceMatr * ProjToUVScale * ProjToUVBias;
+    m_WorldToShadowMapUVDepthMatr = WorldToLightProjSpaceMatr *
+        ProjToUVScale * ProjToUVBias;
 
     RenderCube(WorldToLightProjSpaceMatr, true);
 }
@@ -515,8 +535,11 @@ void Tutorial13_ShadowMap::RenderCube(const float4x4& CameraViewProj, bool IsSha
             float4   LightDirection;
         };
         // Map the buffer and write current world-view-projection matrix
-        MapHelper<Constants> CBConstants(m_pImmediateContext, m_VSConstants, MAP_WRITE, MAP_FLAG_DISCARD);
-        CBConstants->WorldViewProj = (m_CubeWorldMatrix * CameraViewProj).Transpose();
+        MapHelper<Constants> CBConstants(m_pImmediateContext,
+            m_VSConstants,
+            MAP_WRITE, MAP_FLAG_DISCARD);
+        CBConstants->WorldViewProj =
+            (m_CubeWorldMatrix * CameraViewProj).Transpose();
         auto NormalMatrix          = m_CubeWorldMatrix.RemoveTranslation().Inverse();
         // We need to do inverse-transpose, but we also need to transpose the matrix
         // before writing it to the buffer
@@ -526,15 +549,21 @@ void Tutorial13_ShadowMap::RenderCube(const float4x4& CameraViewProj, bool IsSha
 
     // Bind vertex buffer
     IBuffer* pBuffs[] = {m_CubeVertexBuffer};
-    // Note that since resources have been explicitly transitioned to required states, we use RESOURCE_STATE_TRANSITION_MODE_VERIFY flag
-    m_pImmediateContext->SetVertexBuffers(0, 1, pBuffs, nullptr, RESOURCE_STATE_TRANSITION_MODE_VERIFY, SET_VERTEX_BUFFERS_FLAG_RESET);
-    m_pImmediateContext->SetIndexBuffer(m_CubeIndexBuffer, 0, RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+    // Note that since resources have been
+    // explicitly transitioned to required states,
+    // we use RESOURCE_STATE_TRANSITION_MODE_VERIFY flag
+    m_pImmediateContext->SetVertexBuffers(0, 1, pBuffs,
+        nullptr, RESOURCE_STATE_TRANSITION_MODE_VERIFY,
+        SET_VERTEX_BUFFERS_FLAG_RESET);
+    m_pImmediateContext->SetIndexBuffer(m_CubeIndexBuffer, 0,
+        RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
     // Set pipeline state and commit resources
     if (IsShadowPass)
     {
         m_pImmediateContext->SetPipelineState(m_pCubeShadowPSO);
-        m_pImmediateContext->CommitShaderResources(m_CubeShadowSRB, RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+        m_pImmediateContext->CommitShaderResources(m_CubeShadowSRB,
+            RESOURCE_STATE_TRANSITION_MODE_VERIFY);
     }
     else
     {
@@ -542,7 +571,8 @@ void Tutorial13_ShadowMap::RenderCube(const float4x4& CameraViewProj, bool IsSha
         m_pImmediateContext->CommitShaderResources(m_CubeSRB, RESOURCE_STATE_TRANSITION_MODE_VERIFY);
     }
 
-    DrawIndexedAttribs DrawAttrs(36, VT_UINT32, DRAW_FLAG_VERIFY_ALL);
+    DrawIndexedAttribs DrawAttrs(36, VT_UINT32,
+        DRAW_FLAG_VERIFY_ALL);
     m_pImmediateContext->DrawIndexed(DrawAttrs);
 }
 
@@ -555,7 +585,8 @@ void Tutorial13_ShadowMap::RenderPlane()
             float4x4 WorldToShadowMapUVDepth;
             float4   LightDirection;
         };
-        MapHelper<Constants> CBConstants(m_pImmediateContext, m_VSConstants, MAP_WRITE, MAP_FLAG_DISCARD);
+        MapHelper<Constants> CBConstants(m_pImmediateContext,
+            m_VSConstants, MAP_WRITE, MAP_FLAG_DISCARD);
         CBConstants->CameraViewProj          = m_CameraViewProjMatrix.Transpose();
         CBConstants->WorldToShadowMapUVDepth = m_WorldToShadowMapUVDepthMatr.Transpose();
         CBConstants->LightDirection          = m_LightDirection;
@@ -565,7 +596,8 @@ void Tutorial13_ShadowMap::RenderPlane()
     // Commit shader resources. RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode
     // makes sure that resources are transitioned to required states.
     // Note that Vulkan requires shadow map to be transitioned to DEPTH_READ state, not SHADER_RESOURCE
-    m_pImmediateContext->CommitShaderResources(m_PlaneSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pImmediateContext->CommitShaderResources(m_PlaneSRB,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     DrawAttribs DrawAttrs(4, DRAW_FLAG_VERIFY_ALL);
     m_pImmediateContext->Draw(DrawAttrs);
@@ -574,7 +606,8 @@ void Tutorial13_ShadowMap::RenderPlane()
 void Tutorial13_ShadowMap::RenderShadowMapVis()
 {
     m_pImmediateContext->SetPipelineState(m_pShadowMapVisPSO);
-    m_pImmediateContext->CommitShaderResources(m_ShadowMapVisSRB, RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+    m_pImmediateContext->CommitShaderResources(m_ShadowMapVisSRB,
+        RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
     DrawAttribs DrawAttrs(4, DRAW_FLAG_VERIFY_ALL);
     m_pImmediateContext->Draw(DrawAttrs);
@@ -584,17 +617,25 @@ void Tutorial13_ShadowMap::RenderShadowMapVis()
 void Tutorial13_ShadowMap::Render()
 {
     // Render shadow map
-    m_pImmediateContext->SetRenderTargets(0, nullptr, m_ShadowMapDSV, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    m_pImmediateContext->ClearDepthStencil(m_ShadowMapDSV, CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pImmediateContext->SetRenderTargets(0,
+        nullptr, m_ShadowMapDSV,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pImmediateContext->ClearDepthStencil(m_ShadowMapDSV,
+        CLEAR_DEPTH_FLAG, 1.f, 0,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     RenderShadowMap();
 
     // Bind main back buffer
     auto* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
     auto* pDSV = m_pSwapChain->GetDepthBufferDSV();
-    m_pImmediateContext->SetRenderTargets(1, &pRTV, pDSV, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pImmediateContext->SetRenderTargets(1, &pRTV,
+        pDSV, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     const float ClearColor[] = {0.350f, 0.350f, 0.350f, 1.0f};
-    m_pImmediateContext->ClearRenderTarget(pRTV, ClearColor, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    m_pImmediateContext->ClearDepthStencil(pDSV, CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pImmediateContext->ClearRenderTarget(pRTV, ClearColor,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pImmediateContext->ClearDepthStencil(pDSV,
+        CLEAR_DEPTH_FLAG, 1.f, 0,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     RenderCube(m_CameraViewProjMatrix, false);
     RenderPlane();
@@ -607,15 +648,21 @@ void Tutorial13_ShadowMap::Update(double CurrTime, double ElapsedTime)
     UpdateUI();
 
     // Animate the cube
-    m_CubeWorldMatrix = float4x4::RotationY(static_cast<float>(CurrTime) * 1.0f);
+    m_CubeWorldMatrix =
+        float4x4::RotationY(static_cast<float>(CurrTime) * 1.0f);
 
-    float4x4 CameraView = float4x4::Translation(0.f, -5.0f, -10.0f) * float4x4::RotationY(PI_F) * float4x4::RotationX(-PI_F * 0.2);
+    float4x4 CameraView =
+        float4x4::Translation(0.f, -5.0f, -10.0f) *
+            float4x4::RotationY(PI_F) *
+                float4x4::RotationX(-PI_F * 0.2);
 
     // Get pretransform matrix that rotates the scene according the surface orientation
-    auto SrfPreTransform = GetSurfacePretransformMatrix(float3{0, 0, 1});
+    auto SrfPreTransform =
+        GetSurfacePretransformMatrix(float3{0, 0, 1});
 
     // Get projection matrix adjusted to the current screen orientation
-    auto Proj = GetAdjustedProjectionMatrix(PI_F / 4.0f, 0.1f, 100.f);
+    auto Proj = GetAdjustedProjectionMatrix(PI_F / 4.0f,
+        0.1f, 100.f);
 
     // Compute camera view-projection matrix
     m_CameraViewProjMatrix = CameraView * SrfPreTransform * Proj;
