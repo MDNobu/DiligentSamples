@@ -282,7 +282,8 @@ void Tutorial13_ShadowMap::CreateShadowMapVisPSO()
     PSOCreateInfo.GraphicsPipeline.DSVFormat                    =
         m_pSwapChain->GetDesc().DepthBufferFormat;
     // Primitive topology defines what kind of primitives will be rendered by this pipeline state
-    PSOCreateInfo.GraphicsPipeline.PrimitiveTopology            = PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    PSOCreateInfo.GraphicsPipeline.PrimitiveTopology            =
+        PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     // No cull
     PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode      = CULL_MODE_NONE;
     // Disable depth testing
@@ -540,7 +541,8 @@ void Tutorial13_ShadowMap::RenderCube(const float4x4& CameraViewProj, bool IsSha
             MAP_WRITE, MAP_FLAG_DISCARD);
         CBConstants->WorldViewProj =
             (m_CubeWorldMatrix * CameraViewProj).Transpose();
-        auto NormalMatrix          = m_CubeWorldMatrix.RemoveTranslation().Inverse();
+        auto NormalMatrix          =
+            m_CubeWorldMatrix.RemoveTranslation().Inverse();
         // We need to do inverse-transpose, but we also need to transpose the matrix
         // before writing it to the buffer
         CBConstants->NormalTranform = NormalMatrix;
@@ -552,17 +554,21 @@ void Tutorial13_ShadowMap::RenderCube(const float4x4& CameraViewProj, bool IsSha
     // Note that since resources have been
     // explicitly transitioned to required states,
     // we use RESOURCE_STATE_TRANSITION_MODE_VERIFY flag
-    m_pImmediateContext->SetVertexBuffers(0, 1, pBuffs,
+    m_pImmediateContext->SetVertexBuffers(0,
+        1, pBuffs,
         nullptr, RESOURCE_STATE_TRANSITION_MODE_VERIFY,
         SET_VERTEX_BUFFERS_FLAG_RESET);
-    m_pImmediateContext->SetIndexBuffer(m_CubeIndexBuffer, 0,
+    m_pImmediateContext->SetIndexBuffer(m_CubeIndexBuffer,
+        0,
         RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
     // Set pipeline state and commit resources
     if (IsShadowPass)
     {
-        m_pImmediateContext->SetPipelineState(m_pCubeShadowPSO);
-        m_pImmediateContext->CommitShaderResources(m_CubeShadowSRB,
+        m_pImmediateContext->SetPipelineState(
+            m_pCubeShadowPSO);
+        m_pImmediateContext->CommitShaderResources(
+            m_CubeShadowSRB,
             RESOURCE_STATE_TRANSITION_MODE_VERIFY);
     }
     else
@@ -606,10 +612,12 @@ void Tutorial13_ShadowMap::RenderPlane()
 void Tutorial13_ShadowMap::RenderShadowMapVis()
 {
     m_pImmediateContext->SetPipelineState(m_pShadowMapVisPSO);
-    m_pImmediateContext->CommitShaderResources(m_ShadowMapVisSRB,
+    m_pImmediateContext->CommitShaderResources(
+        m_ShadowMapVisSRB,
         RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
-    DrawAttribs DrawAttrs(4, DRAW_FLAG_VERIFY_ALL);
+    DrawAttribs DrawAttrs(4,
+        DRAW_FLAG_VERIFY_ALL);
     m_pImmediateContext->Draw(DrawAttrs);
 }
 
@@ -649,7 +657,7 @@ void Tutorial13_ShadowMap::Update(double CurrTime, double ElapsedTime)
 
     // Animate the cube
     m_CubeWorldMatrix =
-        float4x4::RotationY(static_cast<float>(CurrTime) * 1.0f);
+        float4x4::RotationY(static_cast<float>(0) * 1.0f);
 
     float4x4 CameraView =
         float4x4::Translation(0.f, -5.0f, -10.0f) *

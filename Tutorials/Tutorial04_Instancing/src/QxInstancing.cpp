@@ -153,7 +153,8 @@ void QxInstancing::CreatInstanceBuffer()
     // 只有 instance 数量变化才需要重新上传，所以这里用default
     instanceBufferDesc.Usage = USAGE_DEFAULT;
     instanceBufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-    instanceBufferDesc.Size = sizeof(float4x4) * MaxInstances;
+    // instanceBufferDesc.Size = sizeof(float4x4) * MaxInstances;
+    instanceBufferDesc.Size = sizeof(InstanceData) * MaxInstances;
     m_pDevice->CreateBuffer(instanceBufferDesc,
         nullptr, &m_InstancedBuffer);
     PopulateInstanceBuffer();

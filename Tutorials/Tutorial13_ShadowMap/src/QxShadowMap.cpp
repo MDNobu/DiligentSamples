@@ -316,6 +316,7 @@ void QxShadowMap::CreatePlanePSO()
     PSOCreateInfo.PSODesc.ResourceLayout.NumVariables = _countof(Vars);
 
     SamplerDesc ComparsionSampler;
+    ComparsionSampler.ComparisonFunc = COMPARISON_FUNC_LESS;
     ComparsionSampler.MinFilter = FILTER_TYPE_COMPARISON_LINEAR;
     ComparsionSampler.MagFilter = FILTER_TYPE_COMPARISON_LINEAR;
     ComparsionSampler.MipFilter = FILTER_TYPE_COMPARISON_LINEAR;
@@ -342,6 +343,7 @@ void QxShadowMap::CreatePlanePSO()
 void QxShadowMap::CreateShadowMapVisPSO()
 {
     GraphicsPipelineStateCreateInfo PSOCreateInfo;
+    PSOCreateInfo.PSODesc.Name = "Shadow Map Vis PSO";
 
     PSOCreateInfo.PSODesc.PipelineType = PIPELINE_TYPE_GRAPHICS;
 
@@ -351,7 +353,7 @@ void QxShadowMap::CreateShadowMapVisPSO()
     PSOCreateInfo.GraphicsPipeline.DSVFormat =
         m_pSwapChain->GetDesc().DepthBufferFormat;
     PSOCreateInfo.GraphicsPipeline.PrimitiveTopology =
-        PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode =
         CULL_MODE_NONE;
     PSOCreateInfo.GraphicsPipeline.DepthStencilDesc.DepthEnable =
@@ -372,7 +374,8 @@ void QxShadowMap::CreateShadowMapVisPSO()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Shadow Map Vis VS";
-        ShaderCI.FilePath        = "shadow_map_vis.vsh";
+        // ShaderCI.FilePath        = "shadow_map_vis.vsh";
+        ShaderCI.FilePath = "QxShadowMapVS.hlsl";
         m_pDevice->CreateShader(ShaderCI, &pShadowMapVisVS);
     }
 
@@ -382,7 +385,8 @@ void QxShadowMap::CreateShadowMapVisPSO()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Shadow Map Vis PS";
-        ShaderCI.FilePath        = "shadow_map_vis.psh";
+        // ShaderCI.FilePath        = "shadow_map_vis.psh";
+        ShaderCI.FilePath = "QxShadowMapPS.hlsl";
         m_pDevice->CreateShader(ShaderCI, &pShadowMapVisPS);
     }
     PSOCreateInfo.pVS = pShadowMapVisVS;
@@ -468,88 +472,70 @@ void QxShadowMap::CreateShadowMap()
 
 void QxShadowMap::RenderShadowMap()
 {
-    float3 lightSpaceX,lightSpaceY,lightSpaceZ;
-#pragma region ContructLightSpaceAxis
-    lightSpaceZ = normalize(m_LightDirection);
+    float3 f3LightSpaceX, f3LightSpaceY, f3LightSpaceZ;
+    f3LightSpaceZ = normalize(m_LightDirection);
 
-    // 选择light Direction最短分量的一个轴作为cross依据，
-    // 一般简单做法是直接用world up，
-    {
-        const float min_cmp =
-            std::min(
-                std::min(
-                    std::abs(m_LightDirection.x),
-                    std::abs(m_LightDirection.y)
-                    ),
-                    std::abs(m_LightDirection.z)
-                );
-        if (min_cmp == std::abs(m_LightDirection.x))
-        {
-            lightSpaceX = float3(1, 0, 0);
-        } else if (min_cmp == std::abs(m_LightDirection.y))
-        {
-            lightSpaceX = float3(0, 1, 0);
-        }
-        else
-        {
-            lightSpaceX = float3(0, 0, 1);
-        }
+    auto min_cmp = std::min(std::min(
+        std::abs(m_LightDirection.x),
+        std::abs(m_LightDirection.y)),
+        std::abs(m_LightDirection.z));
+    if (min_cmp == std::abs(m_LightDirection.x))
+        f3LightSpaceX = float3(1, 0, 0);
+    else if (min_cmp == std::abs(m_LightDirection.y))
+        f3LightSpaceX = float3(0, 1, 0);
+    else
+        f3LightSpaceX = float3(0, 0, 1);
 
-        lightSpaceY = cross(lightSpaceZ, lightSpaceX);
-        lightSpaceX = cross(lightSpaceY, lightSpaceZ);
-        lightSpaceX = normalize(lightSpaceX);
-        lightSpaceY = normalize(lightSpaceY);
-    }
-    float4x4 WorldToLightViewSpaceMatr =
-        float4x4::ViewFromBasis(
-            lightSpaceX, lightSpaceY, lightSpaceZ);
+    f3LightSpaceY = cross(f3LightSpaceZ, f3LightSpaceX);
+    f3LightSpaceX = cross(f3LightSpaceY, f3LightSpaceZ);
+    f3LightSpaceX = normalize(f3LightSpaceX);
+    f3LightSpaceY = normalize(f3LightSpaceY);
+
+    float4x4 WorldToLightViewSpaceMatr = float4x4::ViewFromBasis(
+        f3LightSpaceX, f3LightSpaceY, f3LightSpaceZ);
 
     // For this tutorial we know that the scene center is at (0,0,0).
     // Real applications will want to compute tight bounds
-    float3 sceneCenter = float3(0, 0, 0);
-    float sceneRadius = std::sqrt(3.f);
-    float3 minXYZ =
-        sceneCenter - float3(sceneRadius, sceneRadius, sceneRadius);
-    float3 maxXYZ =
-        sceneCenter + float3(sceneRadius, sceneRadius,
-            sceneRadius * 5);
-    float3 sceneExtent = maxXYZ - minXYZ;
+
+    float3 f3SceneCenter = float3(0, 0, 0);
+    float  SceneRadius   = std::sqrt(3.f);
+    float3 f3MinXYZ      = f3SceneCenter - float3(SceneRadius, SceneRadius, SceneRadius);
+    float3 f3MaxXYZ      = f3SceneCenter + float3(SceneRadius, SceneRadius,
+        SceneRadius * 5);
+    float3 f3SceneExtent = f3MaxXYZ - f3MinXYZ;
 
     const auto& DevInfo = m_pDevice->GetDeviceInfo();
-    const bool IsGL = DevInfo.IsGLDevice();
-    float4 lightSpaceScale;
-    lightSpaceScale.x = 2.f / sceneExtent.x;
-    lightSpaceScale.y = 2.f / sceneExtent.y;
-    lightSpaceScale.z = (IsGL ? 2.f : 1.f) / sceneExtent.z;
-
+    const bool  IsGL    = DevInfo.IsGLDevice();
+    float4      f4LightSpaceScale;
+    f4LightSpaceScale.x = 2.f / f3SceneExtent.x;
+    f4LightSpaceScale.y = 2.f / f3SceneExtent.y;
+    f4LightSpaceScale.z = (IsGL ? 2.f : 1.f) / f3SceneExtent.z;
+    // Apply bias to shift the extent to [-1,1]x[-1,1]x[0,1] for DX or to [-1,1]x[-1,1]x[-1,1] for GL
+    // Find bias such that f3MinXYZ -> (-1,-1,0) for DX or (-1,-1,-1) for GL
     float4 f4LightSpaceScaledBias;
-    f4LightSpaceScaledBias.x = -minXYZ.x * lightSpaceScale.x - 1.f;
-    f4LightSpaceScaledBias.y = -minXYZ.y * lightSpaceScale.y - 1.f;
-    f4LightSpaceScaledBias.z = -minXYZ.z * lightSpaceScale.z + (IsGL ? -1.f : 0.f);
+    f4LightSpaceScaledBias.x = -f3MinXYZ.x * f4LightSpaceScale.x - 1.f;
+    f4LightSpaceScaledBias.y = -f3MinXYZ.y * f4LightSpaceScale.y - 1.f;
+    f4LightSpaceScaledBias.z = -f3MinXYZ.z * f4LightSpaceScale.z + (IsGL ? -1.f : 0.f);
 
     float4x4 ScaleMatrix      =
-        float4x4::Scale(lightSpaceScale.x, lightSpaceScale.y, lightSpaceScale.z);
+        float4x4::Scale(f4LightSpaceScale.x, f4LightSpaceScale.y, f4LightSpaceScale.z);
     float4x4 ScaledBiasMatrix =
         float4x4::Translation(f4LightSpaceScaledBias.x, f4LightSpaceScaledBias.y, f4LightSpaceScaledBias.z);
 
     // Note: bias is applied after scaling!
     float4x4 ShadowProjMatr = ScaleMatrix * ScaledBiasMatrix;
 
-    float4x4 WorldToLightProjSpaceMatrx =
-            WorldToLightViewSpaceMatr * ShadowProjMatr;
+    // Adjust the world to light space transformation matrix
+    float4x4 WorldToLightProjSpaceMatr = WorldToLightViewSpaceMatr * ShadowProjMatr;
 
-    const auto& NDCAttribs = DevInfo.GetNDCAttribs();
-    float4x4 ProjToUVScale =
-        float4x4::Scale(0.5f, NDCAttribs.YtoVScale, NDCAttribs.ZtoDepthScale);
-    float4x4 ProjToUVBias =
-        float4x4::Translation(0.5f, 0.5f, NDCAttribs.GetZtoDepthBias());
+    const auto& NDCAttribs    = DevInfo.GetNDCAttribs();
+    float4x4    ProjToUVScale = float4x4::Scale(
+        0.5f, NDCAttribs.YtoVScale, NDCAttribs.ZtoDepthScale);
+    float4x4    ProjToUVBias  = float4x4::Translation(0.5f, 0.5f, NDCAttribs.GetZtoDepthBias());
 
-    m_WorldToShadowMapUVDepthMatr =
-        WorldToLightProjSpaceMatrx * ProjToUVScale * ProjToUVBias;
-
-    RenderCube(WorldToLightViewSpaceMatr, true);
-#pragma endregion
-    
+    m_WorldToShadowMapUVDepthMatr = WorldToLightProjSpaceMatr *
+        ProjToUVScale * ProjToUVBias;
+    RenderCube(WorldToLightProjSpaceMatr, true);
 }
 
 void QxShadowMap::RenderCube(const float4x4& CameraViewProj, bool IsShadowPass)
@@ -592,7 +578,8 @@ void QxShadowMap::RenderCube(const float4x4& CameraViewProj, bool IsShadowPass)
     {
         m_pImmediateContext->SetPipelineState(m_pCubeShadowPSO);
         m_pImmediateContext->CommitShaderResources(
-            m_CubeShadowSRB, RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+            m_CubeShadowSRB,
+            RESOURCE_STATE_TRANSITION_MODE_VERIFY);
     }
     else
     {
@@ -639,9 +626,11 @@ void QxShadowMap::RenderShadowMapVis()
 {
     m_pImmediateContext->SetPipelineState(m_pShadowMapVisPSO);
     m_pImmediateContext->CommitShaderResources(
-        m_ShadowMapVisSRB, RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+        m_ShadowMapVisSRB,
+        RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
-    DrawAttribs DrawAttrs(4, DRAW_FLAG_VERIFY_ALL);
+    DrawAttribs DrawAttrs(4,
+        DRAW_FLAG_VERIFY_ALL);
     m_pImmediateContext->Draw(DrawAttrs);
 }
 }
