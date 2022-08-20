@@ -60,8 +60,10 @@ void Tutorial12_RenderTarget::CreateCubePSO()
     CubePsoCI.RTVFormat            = RenderTargetFormat;
     CubePsoCI.DSVFormat            = DepthBufferFormat;
     CubePsoCI.pShaderSourceFactory = pShaderSourceFactory;
-    CubePsoCI.VSFilePath           = "cube.vsh";
-    CubePsoCI.PSFilePath           = "cube.psh";
+    // CubePsoCI.VSFilePath           = "cube.vsh";
+    CubePsoCI.VSFilePath           = "QxCubeVS.hlsl";
+    // CubePsoCI.PSFilePath           = "cube.psh";
+    CubePsoCI.PSFilePath           = "QxCubePS.hlsl";
     CubePsoCI.Components           = TexturedCube::VERTEX_COMPONENT_FLAG_POS_UV;
 
     m_pCubePSO = TexturedCube::CreatePipelineState(CubePsoCI);
@@ -125,7 +127,8 @@ void Tutorial12_RenderTarget::CreateRenderTargetPSO()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Render Target VS";
-        ShaderCI.FilePath        = "rendertarget.vsh";
+        // ShaderCI.FilePath        = "rendertarget.vsh";
+        ShaderCI.FilePath        = "QxRenderTargetVS.hlsl";
         m_pDevice->CreateShader(ShaderCI, &pRTVS);
     }
 
@@ -147,7 +150,8 @@ void Tutorial12_RenderTarget::CreateRenderTargetPSO()
         ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
         ShaderCI.EntryPoint      = "main";
         ShaderCI.Desc.Name       = "Render Target PS";
-        ShaderCI.FilePath        = "rendertarget.psh";
+        // ShaderCI.FilePath        = "rendertarget.psh";
+        ShaderCI.FilePath        = "QxRenderTargetPS.hlsl";
 
         m_pDevice->CreateShader(ShaderCI, &pRTPS);
 
