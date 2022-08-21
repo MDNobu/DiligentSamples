@@ -126,7 +126,7 @@ void QxShadowMap::Update(double CurrTime, double ElapsedTime)
             float4x4::RotationY(PI_F) *
                 float4x4::RotationX(-PI_F * 0.2);
 
-    float4x4 SrfPreTransform =
+    float4x4 SrfPreTransform = //float4x4::Identity();
         GetSurfacePretransformMatrix(float3{0, 0, 1});
 
     float4x4 Proj =

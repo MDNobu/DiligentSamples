@@ -4,10 +4,12 @@ project(GLTFViewer CXX)
 
 set(SOURCE
     src/GLTFViewer.cpp
+    src/QxGLTFViewer.cpp
 )
 
 set(INCLUDE
     src/GLTFViewer.hpp
+    src/QxGLTFViewer.h
 )
 
 set(SHADERS
@@ -15,6 +17,10 @@ set(SHADERS
     assets/shaders/BoundBox.psh
     assets/shaders/env_map.vsh
     assets/shaders/env_map.psh
+    assets/shaders/QxBoundBoxVS.hlsl
+    assets/shaders/QxBoundBoxPS.hlsl
+    assets/shaders/QxEnvMapVS.hlsl
+    assets/shaders/QxEnvMapPS.hlsl
 )
 
 set(EXTERNAL_SHADERS

@@ -40,6 +40,7 @@
 #include "imGuIZMO.h"
 #include "ImGuiUtils.hpp"
 #include "CallbackWrapper.hpp"
+#include "QxGLTFViewer.h"
 
 namespace Diligent
 {
@@ -49,7 +50,8 @@ namespace Diligent
 
 SampleBase* CreateSample()
 {
-    return new GLTFViewer();
+    // return new GLTFViewer();
+    return new QxGLTFViewer();
 }
 
 namespace
@@ -210,11 +212,16 @@ void GLTFViewer::Initialize(const SampleInitInfo& InitInfo)
     ResetView();
 
     RefCntAutoPtr<ITexture> EnvironmentMap;
-    CreateTextureFromFile("textures/papermill.ktx", TextureLoadInfo{"Environment map"}, m_pDevice, &EnvironmentMap);
+    CreateTextureFromFile("textures/papermill.ktx",
+        TextureLoadInfo{"Environment map"},
+        m_pDevice,
+        &EnvironmentMap);
     m_EnvironmentMapSRV = EnvironmentMap->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
 
-    auto BackBufferFmt  = m_pSwapChain->GetDesc().ColorBufferFormat;
-    auto DepthBufferFmt = m_pSwapChain->GetDesc().DepthBufferFormat;
+    auto BackBufferFmt  =
+        m_pSwapChain->GetDesc().ColorBufferFormat;
+    auto DepthBufferFmt =
+        m_pSwapChain->GetDesc().DepthBufferFormat;
 
     GLTF_PBR_Renderer::CreateInfo RendererCI;
     RendererCI.RTVFmt          = BackBufferFmt;
@@ -223,11 +230,21 @@ void GLTFViewer::Initialize(const SampleInitInfo& InitInfo)
     RendererCI.UseIBL          = true;
     RendererCI.FrontCCW        = true;
     RendererCI.UseTextureAtlas = m_bUseResourceCache;
-    m_GLTFRenderer.reset(new GLTF_PBR_Renderer(m_pDevice, m_pImmediateContext, RendererCI));
+    m_GLTFRenderer.reset(new GLTF_PBR_Renderer(
+        m_pDevice, m_pImmediateContext, RendererCI));
 
-    CreateUniformBuffer(m_pDevice, sizeof(CameraAttribs), "Camera attribs buffer", &m_CameraAttribsCB);
-    CreateUniformBuffer(m_pDevice, sizeof(LightAttribs), "Light attribs buffer", &m_LightAttribsCB);
-    CreateUniformBuffer(m_pDevice, sizeof(EnvMapRenderAttribs), "Env map render attribs buffer", &m_EnvMapRenderAttribsCB);
+    CreateUniformBuffer(m_pDevice,
+        sizeof(CameraAttribs),
+        "Camera attribs buffer",
+        &m_CameraAttribsCB);
+    CreateUniformBuffer(m_pDevice,
+        sizeof(LightAttribs),
+        "Light attribs buffer",
+        &m_LightAttribsCB);
+    CreateUniformBuffer(m_pDevice,
+        sizeof(EnvMapRenderAttribs),
+        "Env map render attribs buffer",
+        &m_EnvMapRenderAttribsCB);
     // clang-format off
     StateTransitionDesc Barriers [] =
     {
@@ -237,9 +254,12 @@ void GLTFViewer::Initialize(const SampleInitInfo& InitInfo)
         {EnvironmentMap,           RESOURCE_STATE_UNKNOWN, RESOURCE_STATE_SHADER_RESOURCE, STATE_TRANSITION_FLAG_UPDATE_STATE}
     };
     // clang-format on
-    m_pImmediateContext->TransitionResourceStates(_countof(Barriers), Barriers);
+    m_pImmediateContext->TransitionResourceStates(
+        _countof(Barriers), Barriers);
 
-    m_GLTFRenderer->PrecomputeCubemaps(m_pDevice, m_pImmediateContext, m_EnvironmentMapSRV);
+    m_GLTFRenderer->PrecomputeCubemaps(
+        m_pDevice, m_pImmediateContext,
+        m_EnvironmentMapSRV);
 
     RefCntAutoPtr<IRenderStateNotationParser> pRSNParser;
     {
@@ -253,8 +273,11 @@ void GLTFViewer::Initialize(const SampleInitInfo& InitInfo)
     RefCntAutoPtr<IRenderStateNotationLoader> pRSNLoader;
     {
         RefCntAutoPtr<IShaderSourceInputStreamFactory> pStreamFactory;
-        m_pEngineFactory->CreateDefaultShaderSourceStreamFactory("shaders", &pStreamFactory);
-        CreateRenderStateNotationLoader({m_pDevice, pRSNParser, pStreamFactory}, &pRSNLoader);
+        m_pEngineFactory->CreateDefaultShaderSourceStreamFactory(
+            "shaders", &pStreamFactory);
+        CreateRenderStateNotationLoader(
+            {m_pDevice, pRSNParser, pStreamFactory},
+            &pRSNLoader);
     }
 
     CreateEnvMapPSO(pRSNLoader);
@@ -278,7 +301,9 @@ void GLTFViewer::UpdateUI()
             const char* Models[_countof(GLTFModels)];
             for (size_t i = 0; i < _countof(GLTFModels); ++i)
                 Models[i] = GLTFModels[i].first;
-            if (ImGui::Combo("Model", &m_SelectedModel, Models, _countof(GLTFModels)))
+            if (ImGui::Combo("Model",
+                &m_SelectedModel, Models,
+                _countof(GLTFModels)))
             {
                 LoadModel(GLTFModels[m_SelectedModel].second);
             }
@@ -303,14 +328,18 @@ void GLTFViewer::UpdateUI()
             for (Uint32 i = 0; i < m_Cameras.size(); ++i)
             {
                 const auto& Cam = m_Cameras[i];
-                CamList.emplace_back(i + 1, Cam->Name.empty() ? std::to_string(i) : Cam->Name);
+                CamList.emplace_back(i + 1,
+                    Cam->Name.empty() ? std::to_string(i) : Cam->Name);
             }
-            ImGui::Combo("Camera", &m_CameraId, CamList.data(), static_cast<int>(CamList.size()));
+            ImGui::Combo("Camera",
+                &m_CameraId, CamList.data(),
+                static_cast<int>(CamList.size()));
         }
 
         if (m_CameraId == 0)
         {
-            ImGui::gizmo3D("Model Rotation", m_ModelRotation, ImGui::GetTextLineHeight() * 10);
+            ImGui::gizmo3D("Model Rotation", m_ModelRotation,
+                ImGui::GetTextLineHeight() * 10);
             ImGui::SameLine();
             ImGui::gizmo3D("Light direction", m_LightDirection, ImGui::GetTextLineHeight() * 10);
 
@@ -319,7 +348,8 @@ void GLTFViewer::UpdateUI()
                 ResetView();
             }
 
-            ImGui::SliderFloat("Camera distance", &m_CameraDist, 0.1f, 5.0f);
+            ImGui::SliderFloat("Camera distance", &m_CameraDist,
+                0.1f, 5.0f);
         }
 
         ImGui::SetNextTreeNodeOpen(true, ImGuiCond_FirstUseEver);
@@ -327,10 +357,16 @@ void GLTFViewer::UpdateUI()
         {
             ImGui::ColorEdit3("Light Color", &m_LightColor.r);
             // clang-format off
-            ImGui::SliderFloat("Light Intensity",    &m_LightIntensity,                 0.f, 50.f);
-            ImGui::SliderFloat("Occlusion strength", &m_RenderParams.OcclusionStrength, 0.f,  1.f);
-            ImGui::SliderFloat("Emission scale",     &m_RenderParams.EmissionScale,     0.f,  1.f);
-            ImGui::SliderFloat("IBL scale",          &m_RenderParams.IBLScale,          0.f,  1.f);
+            ImGui::SliderFloat("Light Intensity",    &m_LightIntensity,
+                0.f, 50.f);
+            ImGui::SliderFloat("Occlusion strength",
+                &m_RenderParams.OcclusionStrength, 0.f,  1.f);
+            ImGui::SliderFloat("Emission scale",
+                &m_RenderParams.EmissionScale,
+                0.f,  1.f);
+            ImGui::SliderFloat("IBL scale",
+                &m_RenderParams.IBLScale,
+                0.f,  1.f);
             // clang-format on
             ImGui::TreePop();
         }
@@ -366,13 +402,17 @@ void GLTFViewer::UpdateUI()
             BackgroundModes[static_cast<size_t>(BackgroundMode::EnvironmentMap)]    = "Environmen Map";
             BackgroundModes[static_cast<size_t>(BackgroundMode::Irradiance)]        = "Irradiance";
             BackgroundModes[static_cast<size_t>(BackgroundMode::PrefilteredEnvMap)] = "PrefilteredEnvMap";
-            if (ImGui::Combo("Background mode", reinterpret_cast<int*>(&m_BackgroundMode), BackgroundModes.data(), static_cast<int>(BackgroundModes.size())))
+            if (ImGui::Combo("Background mode",
+                reinterpret_cast<int*>(&m_BackgroundMode),
+                BackgroundModes.data(),
+                static_cast<int>(BackgroundModes.size())))
             {
                 CreateEnvMapSRB();
             }
         }
 
-        ImGui::SliderFloat("Env map mip", &m_EnvMapMipLevel, 0.0f, 7.0f);
+        ImGui::SliderFloat("Env map mip", &m_EnvMapMipLevel,
+            0.0f, 7.0f);
 
         {
             std::array<const char*, static_cast<size_t>(GLTF_PBR_Renderer::RenderInfo::DebugViewType::NumDebugViews)> DebugViews;
@@ -396,7 +436,8 @@ void GLTFViewer::UpdateUI()
             ImGui::Combo("Debug view", reinterpret_cast<int*>(&m_RenderParams.DebugView), DebugViews.data(), static_cast<int>(DebugViews.size()));
         }
 
-        ImGui::Combo("Bound box mode", reinterpret_cast<int*>(&m_BoundBoxMode),
+        ImGui::Combo("Bound box mode",
+            reinterpret_cast<int*>(&m_BoundBoxMode),
                      "None\0"
                      "Local\0"
                      "Global\0\0");
