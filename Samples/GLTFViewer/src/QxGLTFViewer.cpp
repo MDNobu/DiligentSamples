@@ -51,7 +51,6 @@ const std::pair<const char*, const char*> QxGLTFViewer::GLTFModels[] =
 
 QxGLTFViewer::~QxGLTFViewer()
 {
-    
 }
 
 void QxGLTFViewer::ProcessCommandLine(const char* CmdLine)
@@ -166,37 +165,307 @@ void QxGLTFViewer::Initialize(const SampleInitInfo& InitInfo)
 
 void QxGLTFViewer::Render()
 {
+    ITextureView* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
+    ITextureView* pDSV = m_pSwapChain->GetDepthBufferDSV();
 
+    const float ClearColor[] = {0.032f, 0.032f, 0.032f, 1.0f};
+    m_pImmediateContext->ClearRenderTarget(
+        pRTV, ClearColor, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pImmediateContext->ClearDepthStencil(
+        pDSV, CLEAR_DEPTH_FLAG, 1.f, 0,
+        RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+    float YFov = PI_F / 4.f;
+    float ZNear = 0.1f;
+    float ZFar = 100.f;
+
+    float4x4 CameraView;
+    if (m_CameraId == 0)
+    {
+        CameraView =
+            m_CameraRotation.ToMatrix() *
+                float4x4::Translation(0.f, 0.f, m_CameraDist);
+        m_RenderParams.ModelTransform =
+            m_ModelRotation.ToMatrix();
+    }
+    else
+    {
+        const auto* pCamera = m_Cameras[m_CameraId - 1];
+
+        float4x4 InvZAxis = float4x4::Identity();
+        InvZAxis.33 = -1;
+
+        CameraView = pCamera->matrix.Inverse() * InvZAxis;
+        YFov = pCamera->Perspective.YFov;
+        ZNear = pCamera->Perspective.ZNear;
+        ZFar = pCamera->Perspective.ZFar;
+
+        m_RenderParams.ModelTransform = float4x4::Identity();
+    }
+
+    // Apply pretransform matrix that rotates the scene according the surface orientation
+    CameraView *= GetSurfacePretransformMatrix(float3{0, 0, 1});
+
+    float4x4 CameraToWorld = CameraView.Inverse();
+
+    // get projection matrix adjusted to the current screen orientation
+    const auto CameraProj = GetAdjustedProjectionMatrix(YFov, ZNear, ZFar);
+    const auto CameraViewProj =
+        CameraView* CameraProj;
+
+    float3 CameraWorldPos =
+        float3::MakeVector(CameraToWorld[3]);
+
+    {
+        MapHelper<CameraAttribs> CamAttribs(m_pImmediateContext,
+            m_CameraAttribsCB, MAP_WRITE, MAP_FLAG_DISCARD);
+        CamAttribs->mProjT =
+            CameraProj.Transpose();
+        CamAttribs->mViewProjT =
+            CameraViewProj.Transpose();
+        CamAttribs->mViewProjInvT = CameraViewProj.Inverse().Transpose();
+        CamAttribs->f4Position = float4(CameraWorldPos, 1);
+
+        if (m_BoundBoxMode != BoundBoxMode::None)
+        {
+            float4x4 BBTransform;
+            if (m_BoundBoxMode == BoundBoxMode::Local)
+            {
+                   
+            } else if (m_BoundBoxMode == BoundBoxMode::Global)
+            {
+                
+            }
+            else
+            {
+                UNEXPECTED("Unexpected bound box mode");
+            }
+
+            for (int row = 0; row < 4; ++row)
+            {
+                CamAttribs->f4ExtraData[row] =
+                    float4::MakeVector(BBTransform[row]);
+            }
+        }
+    }
 }
 
 void QxGLTFViewer::Update(double CurrTime, double ElapsedTime)
 {
+    if (m_CameraId == 0)
+    {
+        const MouseState& mouseState = m_InputController.GetMouseState();
+
+        float MouseDeltaX = 0;
+        float MouseDeltaY = 0;
+        if (m_LastMouseState.PosX >= 0 &&
+            m_LastMouseState.PosY >= 0 &&
+            m_LastMouseState.ButtonFlags != MouseState::BUTTON_FLAG_NONE)
+        {
+            MouseDeltaX = mouseState.PosX - m_LastMouseState.PosX;
+            MouseDeltaY = mouseState.PosY - m_LastMouseState.PosX;
+        }
+        m_LastMouseState = mouseState;
+
+        const float RotationSpeed = 0.005f;
+        float YawDelta = MouseDeltaX * RotationSpeed;
+        float PitchDelta = MouseDeltaY * RotationSpeed;
+        if (mouseState.ButtonFlags & MouseState::BUTTON_FLAG_LEFT)
+        {
+            m_CameraYaw += YawDelta;
+            m_CamearPitch += PitchDelta;
+            m_CamearPitch = std::max(m_CamearPitch, -PI_F / 2.f);
+            m_CamearPitch = std::min(m_CamearPitch, +PI_F / 2.f);
+        }
+        
+        // Apply extra rotations to adjust the view to match Khronos GLTF viewer
+        m_CameraRotation =
+            Quaternion::RotationFromAxisAngle(float3(1, 0, 0), -m_CamearPitch)
+            * Quaternion::RotationFromAxisAngle(float3(0, 1, 0), -m_CameraYaw)
+            * Quaternion::RotationFromAxisAngle(float3(0.75f, 0.75f, 0.75f), PI_F);
+        
+        if (mouseState.ButtonFlags & MouseState::BUTTON_FLAG_RIGHT)
+        {
+            float4x4 CameraView = m_CameraRotation.ToMatrix();
+            float4x4 CameraWorld = CameraView.Transpose();
+
+            float3 CameraRight = float3::MakeVector(CameraWorld[0]);
+            float3 CameraUp =
+                float3::MakeVector(CameraWorld[1]);
+            m_ModelRotation =
+                Quaternion::RotationFromAxisAngle(CameraRight, -PitchDelta)
+                * Quaternion::RotationFromAxisAngle(CameraUp, -YawDelta)
+                * m_ModelRotation;
+        }
+        
+        m_CameraDist -= mouseState.WheelDelta * 0.25f;
+        m_CameraDist = clamp(m_CameraDist, 0.1f, 5.f);
+        
+        const bool bResetHit =
+            m_InputController.GetKeyState(InputKeys::Reset) & INPUT_KEY_STATE_FLAG_KEY_IS_DOWN;
+        if (bResetHit)
+        {
+            ResetView();
+        }
+    }
+    
     SampleBase::Update(CurrTime, ElapsedTime);
     UpdateUI();
+
+    if (!m_Model->Animations.empty() && m_PlayAnimation)
+    {
+        float& AnimationTimer =
+            m_AnimationTimers[m_AnimationIndex];
+        AnimationTimer += static_cast<float>(ElapsedTime);
+        AnimationTimer =
+            std::fmod(AnimationTimer,
+                m_Model->Animations[m_AnimationIndex].End);
+        m_Model->UpdateAnimation(m_AnimationIndex, AnimationTimer);
+    }
 }
 void QxGLTFViewer::CreateEnvMapPSO(IRenderStateNotationLoader* pRSNLoader)
 {
-    
+    auto ModifyCI = MakeCallback(
+        [this](PipelineStateCreateInfo& PipelineCI) {
+            auto& GraphicPipelineCI{static_cast<GraphicsPipelineStateCreateInfo&>(PipelineCI)};
+            GraphicPipelineCI.GraphicsPipeline.RTVFormats[0] =
+                m_pSwapChain->GetDesc().ColorBufferFormat;
+            GraphicPipelineCI.GraphicsPipeline.DSVFormat =
+                m_pSwapChain->GetDesc().DepthBufferFormat;
+            GraphicPipelineCI.GraphicsPipeline.NumRenderTargets = 1;
+        }
+    );
+
+    pRSNLoader->LoadPipelineState(
+        {"EnvMap PSO", PIPELINE_TYPE_GRAPHICS,
+        true, ModifyCI,
+        ModifyCI}, &m_EnvMapPSO
+        );
+
+    m_EnvMapPSO->GetStaticVariableByName(
+        SHADER_TYPE_PIXEL, "cbCameraAttribs")->Set(
+            m_CameraAttribsCB);
+    m_EnvMapPSO->GetStaticVariableByName(
+        SHADER_TYPE_PIXEL, "cbEnvMapRenderAttribs")->Set(
+            m_EnvMapRenderAttribsCB);
+    CreateEnvMapSRB();
 }
 
 void QxGLTFViewer::CreateEnvMapSRB()
 {
-    
+    if (m_BackgroundMode == BackgroundMode::None)
+        return;
+
+    m_EnvMapSRB.Release();
+    m_EnvMapPSO->CreateShaderResourceBinding(
+        &m_EnvMapSRB, true);
+    ITextureView* pEnvMapSRV  = nullptr;
+    switch (m_BackgroundMode)
+    {
+        case BackgroundMode::EnvironmentMap:
+            pEnvMapSRV = m_EnvironmentMapSRV;
+            break;
+        case BackgroundMode::Irradiance:
+            pEnvMapSRV = m_GLTFRender->GetIrradianceCubeSRV();
+            break;
+        case BackgroundMode::PrefilteredEnvMap:
+            pEnvMapSRV = m_GLTFRender->GetPrefilteredEnvMapSRV();
+            break;
+        default:
+            UNEXPECTED("Unexpected background mod");
+    }
 }
 
 void QxGLTFViewer::CreateBoundBoxPSO(IRenderStateNotationLoader* pRSNLoader)
 {
-    
+    auto ModifyCI = MakeCallback(
+        [this](PipelineStateCreateInfo& PipelineCI) {
+            auto& GraphicPipelineCI{static_cast<GraphicsPipelineStateCreateInfo&>(PipelineCI)};
+            GraphicPipelineCI.GraphicsPipeline.RTVFormats[0] =
+                m_pSwapChain->GetDesc().ColorBufferFormat;
+            GraphicPipelineCI.GraphicsPipeline.DSVFormat =
+                m_pSwapChain->GetDesc().DefaultStencilValue;
+            GraphicPipelineCI.GraphicsPipeline.NumRenderTargets = 1;
+        }
+    );
+    pRSNLoader->LoadPipelineState(
+        LoadPipelineStateInfo{
+            "BoundBox PSO", PIPELINE_TYPE_GRAPHICS,
+            true, ModifyCI,
+            ModifyCI},
+        &m_BoundBoxPSO
+        );
+    m_BoundBoxPSO->GetStaticVariableByName(
+        SHADER_TYPE_VERTEX, "cbCameraAttribs")->Set(
+            m_CameraAttribsCB);
+    m_BoundBoxPSO->CreateShaderResourceBinding(
+        &m_BoundBoxSRB, true);
 }
 
 void QxGLTFViewer::LoadModel(const char* Path)
 {
-    
+    if (m_Model)
+    {
+        m_PlayAnimation = false;
+        m_AnimationIndex = 0;
+        m_AnimationTimers.clear();
+    }
+
+    GLTF::Model::CreateInfo ModelCI;
+    ModelCI.FileName = Path;
+    ModelCI.pCacheInfo = m_bUseResourceCache ? &m_CacheUseInfo : nullptr;
+    m_Model.reset(
+        new GLTF::Model{m_pDevice, m_pImmediateContext, ModelCI}
+        );
+
+    m_ModelResourceBindings =
+        m_GLTFRender->CreateResourceBindings(
+            *m_Model,m_CameraAttribsCB, m_LightAttribsCB);
+
+    // center and scale model
+    float3 ModelScale{
+        m_Model->AABBTransform[0][0], m_Model->AABBTransform[1][1], m_Model->AABBTransform[2][2]};
+    float Scale =
+        (1.f / std::max(std::max(ModelScale.x, ModelScale.y), ModelScale.z)) * 0.5f;
+    auto Translate =
+        -float3(m_Model->AABBTransform[3][0], m_Model->AABBTransform[3][1], m_Model->AABBTransform[3][2]);
+    Translate += -0.5f * ModelScale;
+    float4x4 InvYAxis = float4x4::Identity();
+    InvYAxis._22 = -1;
+
+    auto ModelTransform =
+        float4x4::Translation(Translate) * float4x4::Scale(Scale) * InvYAxis;
+    m_Model->Transform(ModelTransform);
+    if (!m_Model->Animations.empty())
+    {
+        m_AnimationTimers.resize(m_Model->Animations.size());
+        m_AnimationIndex = 0;
+        m_PlayAnimation = true;
+    }
+
+    m_CameraId = 0;
+    m_Cameras.clear();
+    for (const GLTF::Node* node : m_Model->LinearNodes)
+    {
+        if (node->pCamera &&
+            node->pCamera->Type ==
+            GLTF::Camera::Projection::Perspective)
+        {
+            m_Cameras.push_back(node->pCamera.get());
+        }
+    }
 }
 
 void QxGLTFViewer::ResetView()
 {
-    
+    m_CameraYaw = 0;
+    m_CamearPitch = 0;
+    m_ModelRotation =
+        Quaternion::RotationFromAxisAngle(
+            float3(0.f, 1.f, 0.f), -PI_F / 2.f);
+    m_CameraRotation =
+        Quaternion::RotationFromAxisAngle(
+            float3(0.75f, 0.f, 0.75f), PI_F);
 }
 
 void QxGLTFViewer::UpdateUI()
@@ -338,6 +607,57 @@ void QxGLTFViewer::UpdateUI()
 
 void QxGLTFViewer::CreateGLTFResourceCache()
 {
-    
+   std::array<BufferSuballocatorCreateInfo, 3> Buffers = {};
+
+    Buffers[0].Desc.Name      = "GLTF basic vertex attribs buffer";
+    Buffers[0].Desc.BindFlags = BIND_VERTEX_BUFFER;
+    Buffers[0].Desc.Usage     = USAGE_DEFAULT;
+    Buffers[0].Desc.Size      = sizeof(GLTF::Model::VertexBasicAttribs) * 16 << 10;
+
+    Buffers[1].Desc.Name      = "GLTF skin attribs buffer";
+    Buffers[1].Desc.BindFlags = BIND_VERTEX_BUFFER;
+    Buffers[1].Desc.Usage     = USAGE_DEFAULT;
+    Buffers[1].Desc.Size      = sizeof(GLTF::Model::VertexSkinAttribs) * 16 << 10;
+
+    Buffers[2].Desc.Name      = "GLTF index buffer";
+    Buffers[2].Desc.BindFlags = BIND_INDEX_BUFFER;
+    Buffers[2].Desc.Usage     = USAGE_DEFAULT;
+    Buffers[2].Desc.Size      = sizeof(Uint32) * 8 << 10;
+
+    std::array<DynamicTextureAtlasCreateInfo, 1> Atlases;
+    Atlases[0].Desc.Name      = "GLTF texture atlas";
+    Atlases[0].Desc.Type      = RESOURCE_DIM_TEX_2D_ARRAY;
+    Atlases[0].Desc.Usage     = USAGE_DEFAULT;
+    Atlases[0].Desc.BindFlags = BIND_SHADER_RESOURCE;
+    Atlases[0].Desc.Format    = TEX_FORMAT_RGBA8_UNORM;
+    Atlases[0].Desc.Width     = 4096;
+    Atlases[0].Desc.Height    = 4096;
+    Atlases[0].Desc.MipLevels = 6;
+
+    GLTF::ResourceManager::CreateInfo ResourceMgrCI;
+    ResourceMgrCI.BuffSuballocators    = Buffers.data();
+    ResourceMgrCI.NumBuffSuballocators = static_cast<Uint32>(Buffers.size());
+    ResourceMgrCI.TexAtlases           = Atlases.data();
+    ResourceMgrCI.NumTexAtlases        = static_cast<Uint32>(Atlases.size());
+
+    ResourceMgrCI.DefaultAtlasDesc.Desc.Type      = RESOURCE_DIM_TEX_2D_ARRAY;
+    ResourceMgrCI.DefaultAtlasDesc.Desc.Usage     = USAGE_DEFAULT;
+    ResourceMgrCI.DefaultAtlasDesc.Desc.BindFlags = BIND_SHADER_RESOURCE;
+    ResourceMgrCI.DefaultAtlasDesc.Desc.Width     = 4096;
+    ResourceMgrCI.DefaultAtlasDesc.Desc.Height    = 4096;
+    ResourceMgrCI.DefaultAtlasDesc.Desc.MipLevels = 6;
+
+    m_pResourceMgr = GLTF::ResourceManager::Create(m_pDevice, ResourceMgrCI);
+
+    m_CacheUseInfo.pResourceMgr     = m_pResourceMgr;
+    m_CacheUseInfo.VertexBuffer0Idx = 0;
+    m_CacheUseInfo.VertexBuffer1Idx = 1;
+    m_CacheUseInfo.IndexBufferIdx   = 2;
+
+    m_CacheUseInfo.BaseColorFormat    = TEX_FORMAT_RGBA8_UNORM;
+    m_CacheUseInfo.PhysicalDescFormat = TEX_FORMAT_RGBA8_UNORM;
+    m_CacheUseInfo.NormalFormat       = TEX_FORMAT_RGBA8_UNORM;
+    m_CacheUseInfo.OcclusionFormat    = TEX_FORMAT_RGBA8_UNORM;
+    m_CacheUseInfo.EmissiveFormat     = TEX_FORMAT_RGBA8_UNORM;
 }
 }

@@ -70,6 +70,7 @@ private:
     BoundBoxMode m_BoundBoxMode = BoundBoxMode::None;
     bool m_PlayAnimation = false;
     int m_AnimationIndex = 0;
+    std::vector<float> m_AnimationTimers;
 
     std::unique_ptr<GLTF_PBR_Renderer> m_GLTFRender;
     std::unique_ptr<GLTF::Model> m_Model;
@@ -90,7 +91,7 @@ private:
     GLTF_PBR_Renderer::ResourceCacheBindings m_CacheBindings;
 
     MouseState m_LastMouseState;
-    float m_CameraView = 0;
+    float m_CameraYaw = 0;
     float m_CamearPitch  =0 ;
 
     Uint32 m_CameraId = 0;

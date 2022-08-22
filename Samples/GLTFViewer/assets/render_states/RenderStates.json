@@ -23,7 +23,7 @@
                     "Name": "BoundBox VS"
                 },
                 "EntryPoint": "BoundBoxVS",
-                "FilePath": "BoundBox.vsh"
+                "FilePath": "QxBoundBoxVS.hlsl"
             },
             "pPS": {
                 "Desc": {
@@ -31,7 +31,7 @@
                     "Name": "BoundBox PS"
                 },
                 "EntryPoint": "BoundBoxPS",
-                "FilePath": "BoundBox.psh"
+                "FilePath": "QxBoundBoxPS.hlsl"
             }
         },
         {
@@ -81,7 +81,7 @@
                     "Name": "Environment map VS"
                 },
                 "EntryPoint": "main",
-                "FilePath": "env_map.vsh"
+                "FilePath": "QxEnvMapVS.hlsl"
             },
             "pPS": {
                 "Desc": {
@@ -89,7 +89,7 @@
                     "Name": "Environment map PS"
                 },
                 "EntryPoint": "main",
-                "FilePath": "env_map.psh",
+                "FilePath": "QxEnvMapPS.hlsl",
                 "Macros": [
                     {
                         "Name": "TONE_MAPPING_MODE",
