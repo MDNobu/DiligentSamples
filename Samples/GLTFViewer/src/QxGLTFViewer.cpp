@@ -231,10 +231,18 @@ void QxGLTFViewer::Render()
             float4x4 BBTransform;
             if (m_BoundBoxMode == BoundBoxMode::Local)
             {
-                   
+                BBTransform =
+                    m_Model->AABBTransform * m_RenderParams.ModelTransform;
             } else if (m_BoundBoxMode == BoundBoxMode::Global)
             {
-                
+                BoundBox TransformBB =
+                    BoundBox{m_Model->dimensions.min,
+                    m_Model->dimensions.max}.Transform(
+                        m_RenderParams.ModelTransform);
+                BBTransform =
+                    float4x4::Scale(
+                        TransformBB.Max - TransformBB.Min)
+                    * float4x4::Translation(TransformBB.Min);
             }
             else
             {
@@ -247,6 +255,78 @@ void QxGLTFViewer::Render()
                     float4::MakeVector(BBTransform[row]);
             }
         }
+    }
+
+    {
+        MapHelper<LightAttribs> lightAttribs(
+            m_pImmediateContext, m_LightAttribsCB,
+            MAP_WRITE, MAP_FLAG_DISCARD
+            );
+        lightAttribs->f4Direction = m_LightDirection;
+        lightAttribs->f4Intensity = m_LightColor * m_LightIntensity;
+    }
+
+    if (m_bUseResourceCache)
+    {
+        m_GLTFRender->Begin(
+            m_pDevice, m_pImmediateContext,
+            m_CacheUseInfo, m_CacheBindings,
+            m_CameraAttribsCB, m_LightAttribsCB
+            );
+        m_GLTFRender->Render(
+            m_pImmediateContext,
+            *m_Model,
+            m_RenderParams, nullptr,
+            &m_CacheBindings
+            );
+    }
+    else
+    {
+        m_GLTFRender->Begin(m_pImmediateContext);
+        m_GLTFRender->Render(
+            m_pImmediateContext,
+            *m_Model,
+            m_RenderParams,
+            &m_ModelResourceBindings
+            );
+    }
+
+    if (m_BoundBoxMode != BoundBoxMode::None)
+    {
+        m_pImmediateContext->SetPipelineState(m_BoundBoxPSO);
+        m_pImmediateContext->CommitShaderResources(
+            m_BoundBoxSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        DrawAttribs DrawAttrs{24, DRAW_FLAG_VERIFY_ALL};
+        m_pImmediateContext->Draw(DrawAttrs);
+    }
+
+    if (m_BackgroundMode != BackgroundMode::None)
+    {
+        {
+            MapHelper<EnvMapRenderAttribs> EnvMapAttribs(
+                m_pImmediateContext, m_EnvMapRenderAttribsCB,
+                MAP_WRITE, MAP_FLAG_DISCARD
+                );
+            EnvMapAttribs->ToneMapAttribs.iToneMappingMode =
+                TONE_MAPPING_MODE_UNCHARTED2;
+            EnvMapAttribs->ToneMapAttribs.bAutoExposure = 0;
+            EnvMapAttribs->ToneMapAttribs.fMiddleGray =
+                m_RenderParams.MiddleGray;
+            EnvMapAttribs->ToneMapAttribs.bLightAdaptation = 0;
+            EnvMapAttribs->ToneMapAttribs.fWhitePoint =
+                m_RenderParams.WhitePoint;
+            EnvMapAttribs->ToneMapAttribs.fLuminanceSaturation = 1.0;
+            EnvMapAttribs->AverageLogLum =
+                m_RenderParams.AverageLogLum;
+            EnvMapAttribs->MipLevel =
+                m_EnvMapMipLevel;
+        }
+
+        m_pImmediateContext->SetPipelineState(m_EnvMapPSO);
+        m_pImmediateContext->CommitShaderResources(
+            m_EnvMapSRB, RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+        DrawAttribs drawAttribs(3, DRAW_FLAG_VERIFY_ALL);
+        m_pImmediateContext->Draw(drawAttribs);
     }
 }
 
