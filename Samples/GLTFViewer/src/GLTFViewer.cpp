@@ -50,8 +50,8 @@ namespace Diligent
 
 SampleBase* CreateSample()
 {
-    return new GLTFViewer();
-    // return new QxGLTFViewer();
+    // return new GLTFViewer();
+    return new QxGLTFViewer();
 }
 
 namespace
@@ -492,7 +492,8 @@ void GLTFViewer::CreateEnvMapSRB()
             default:
                 UNEXPECTED("Unexpected background mode");
         }
-        m_EnvMapSRB->GetVariableByName(SHADER_TYPE_PIXEL, "EnvMap")->Set(pEnvMapSRV);
+        m_EnvMapSRB->GetVariableByName(SHADER_TYPE_PIXEL, "EnvMap")
+            ->Set(pEnvMapSRV);
     }
 }
 
@@ -692,15 +693,17 @@ void GLTFViewer::Update(double CurrTime, double ElapsedTime)
         {
             m_CameraYaw += fYawDelta;
             m_CameraPitch += fPitchDelta;
-            m_CameraPitch = std::max(m_CameraPitch, -PI_F / 2.f);
-            m_CameraPitch = std::min(m_CameraPitch, +PI_F / 2.f);
+             m_CameraPitch = std::max(m_CameraPitch, -PI_F / 2.f);
+             m_CameraPitch = std::min(m_CameraPitch, +PI_F / 2.f);
         }
 
+        m_CameraPitch = 30.f/ 180.f * PI_F;
+        m_CameraYaw   = 20.f / 180.f * PI_F;
         // Apply extra rotations to adjust the view to match Khronos GLTF viewer
         m_CameraRotation =
             Quaternion::RotationFromAxisAngle(float3{1, 0, 0}, -m_CameraPitch) *
-            Quaternion::RotationFromAxisAngle(float3{0, 1, 0}, -m_CameraYaw) *
-            Quaternion::RotationFromAxisAngle(float3{0.75f, 0.0f, 0.75f}, PI_F);
+            Quaternion::RotationFromAxisAngle(float3{0, 1, 0}, -m_CameraYaw)
+            * Quaternion::RotationFromAxisAngle(float3{0.75f, 0.0f, 0.75f}, PI_F);
 
         if (mouseState.ButtonFlags & MouseState::BUTTON_FLAG_RIGHT)
         {

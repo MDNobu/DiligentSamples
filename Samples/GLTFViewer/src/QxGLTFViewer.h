@@ -45,7 +45,7 @@ private:
     BackgroundMode m_BackgroundMode = BackgroundMode::PrefilteredEnvMap;
     
     GLTF_PBR_Renderer::RenderInfo m_RenderParams;
-    Quaternion m_CameraRotation = {0, 0, 0, 0};
+    Quaternion m_CameraRotation = {0, 0, 0, 1};
     Quaternion m_ModelRotation =
         Quaternion::RotationFromAxisAngle(
             float3{0, 1, 0}, -PI_F / 2.f);

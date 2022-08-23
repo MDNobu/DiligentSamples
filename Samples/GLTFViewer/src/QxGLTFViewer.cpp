@@ -193,7 +193,7 @@ void QxGLTFViewer::Render()
         const auto* pCamera = m_Cameras[m_CameraId - 1];
 
         float4x4 InvZAxis = float4x4::Identity();
-        InvZAxis.33 = -1;
+        InvZAxis._33 = -1;
 
         CameraView = pCamera->matrix.Inverse() * InvZAxis;
         YFov = pCamera->Perspective.YFov;
@@ -343,11 +343,11 @@ void QxGLTFViewer::Update(double CurrTime, double ElapsedTime)
             m_LastMouseState.ButtonFlags != MouseState::BUTTON_FLAG_NONE)
         {
             MouseDeltaX = mouseState.PosX - m_LastMouseState.PosX;
-            MouseDeltaY = mouseState.PosY - m_LastMouseState.PosX;
+            MouseDeltaY = mouseState.PosY - m_LastMouseState.PosY;
         }
         m_LastMouseState = mouseState;
 
-        const float RotationSpeed = 0.005f;
+        constexpr  float RotationSpeed = 0.005f;
         float YawDelta = MouseDeltaX * RotationSpeed;
         float PitchDelta = MouseDeltaY * RotationSpeed;
         if (mouseState.ButtonFlags & MouseState::BUTTON_FLAG_LEFT)
@@ -357,12 +357,12 @@ void QxGLTFViewer::Update(double CurrTime, double ElapsedTime)
             m_CamearPitch = std::max(m_CamearPitch, -PI_F / 2.f);
             m_CamearPitch = std::min(m_CamearPitch, +PI_F / 2.f);
         }
-        
+
         // Apply extra rotations to adjust the view to match Khronos GLTF viewer
         m_CameraRotation =
             Quaternion::RotationFromAxisAngle(float3(1, 0, 0), -m_CamearPitch)
             * Quaternion::RotationFromAxisAngle(float3(0, 1, 0), -m_CameraYaw)
-            * Quaternion::RotationFromAxisAngle(float3(0.75f, 0.75f, 0.75f), PI_F);
+            * Quaternion::RotationFromAxisAngle(float3(0.75f, 0.f, 0.75f), PI_F);
         
         if (mouseState.ButtonFlags & MouseState::BUTTON_FLAG_RIGHT)
         {
@@ -372,10 +372,10 @@ void QxGLTFViewer::Update(double CurrTime, double ElapsedTime)
             float3 CameraRight = float3::MakeVector(CameraWorld[0]);
             float3 CameraUp =
                 float3::MakeVector(CameraWorld[1]);
-            m_ModelRotation =
-                Quaternion::RotationFromAxisAngle(CameraRight, -PitchDelta)
-                * Quaternion::RotationFromAxisAngle(CameraUp, -YawDelta)
-                * m_ModelRotation;
+            // m_ModelRotation =
+            //     Quaternion::RotationFromAxisAngle(CameraRight, -PitchDelta)
+            //     * Quaternion::RotationFromAxisAngle(CameraUp, -YawDelta)
+            //     * m_ModelRotation;
         }
         
         m_CameraDist -= mouseState.WheelDelta * 0.25f;
@@ -454,6 +454,10 @@ void QxGLTFViewer::CreateEnvMapSRB()
         default:
             UNEXPECTED("Unexpected background mod");
     }
+    m_EnvMapSRB->GetVariableByName(
+        SHADER_TYPE_PIXEL,
+        "EnvMap")->Set(
+            pEnvMapSRV);
 }
 
 void QxGLTFViewer::CreateBoundBoxPSO(IRenderStateNotationLoader* pRSNLoader)
@@ -464,7 +468,7 @@ void QxGLTFViewer::CreateBoundBoxPSO(IRenderStateNotationLoader* pRSNLoader)
             GraphicPipelineCI.GraphicsPipeline.RTVFormats[0] =
                 m_pSwapChain->GetDesc().ColorBufferFormat;
             GraphicPipelineCI.GraphicsPipeline.DSVFormat =
-                m_pSwapChain->GetDesc().DefaultStencilValue;
+                m_pSwapChain->GetDesc().DepthBufferFormat;
             GraphicPipelineCI.GraphicsPipeline.NumRenderTargets = 1;
         }
     );
