@@ -6,6 +6,7 @@
 #include "GLTFLoader.hpp"
 #include "GLTF_PBR_Renderer.hpp"
 #include "BasicMath.hpp"
+#include "QxGLTF_PBR_Render.hpp"
 
 namespace Diligent
 {
@@ -44,7 +45,7 @@ private:
     };
     BackgroundMode m_BackgroundMode = BackgroundMode::PrefilteredEnvMap;
     
-    GLTF_PBR_Renderer::RenderInfo m_RenderParams;
+    QxGLTF_PBR_Render::RenderInfo m_RenderParams;
     Quaternion m_CameraRotation = {0, 0, 0, 1};
     Quaternion m_ModelRotation =
         Quaternion::RotationFromAxisAngle(
@@ -72,7 +73,8 @@ private:
     int m_AnimationIndex = 0;
     std::vector<float> m_AnimationTimers;
 
-    std::unique_ptr<GLTF_PBR_Renderer> m_GLTFRender;
+    // std::unique_ptr<GLTF_PBR_Renderer> m_GLTFRender;
+    std::unique_ptr<QxGLTF_PBR_Render> m_GLTFRender;
     std::unique_ptr<GLTF::Model> m_Model;
     RefCntAutoPtr<IBuffer> m_CameraAttribsCB;
     RefCntAutoPtr<IBuffer> m_LightAttribsCB;
@@ -87,8 +89,8 @@ private:
     RefCntAutoPtr<GLTF::ResourceManager> m_pResourceMgr;
     GLTF::ResourceCacheUseInfo m_CacheUseInfo;
 
-    GLTF_PBR_Renderer::ModelResourceBindings m_ModelResourceBindings;
-    GLTF_PBR_Renderer::ResourceCacheBindings m_CacheBindings;
+    QxGLTF_PBR_Render::ModelResourceBindings m_ModelResourceBindings;
+    QxGLTF_PBR_Render::ResourceCacheBindings m_CacheBindings;
 
     MouseState m_LastMouseState;
     float m_CameraYaw = 0;

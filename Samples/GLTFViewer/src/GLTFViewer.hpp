@@ -104,7 +104,7 @@ private:
     RefCntAutoPtr<IPipelineState>         m_BoundBoxPSO;
     RefCntAutoPtr<IShaderResourceBinding> m_BoundBoxSRB;
 
-    bool                                 m_bUseResourceCache = false;
+    bool                                 m_bUseResourceCache = true;
     RefCntAutoPtr<GLTF::ResourceManager> m_pResourceMgr;
     GLTF::ResourceCacheUseInfo           m_CacheUseInfo;
 

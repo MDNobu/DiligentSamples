@@ -88,7 +88,7 @@ void QxGLTFViewer::Initialize(const SampleInitInfo& InitInfo)
     TEXTURE_FORMAT DepthBufferFormat =
         m_pSwapChain->GetDesc().DepthBufferFormat;
 
-    GLTF_PBR_Renderer::CreateInfo RenderCI;
+    QxGLTF_PBR_Render::CreateInfo RenderCI;
     RenderCI.RTVFmt = BackBufferFormat;
     RenderCI.DSVFmt = DepthBufferFormat;
     RenderCI.AllowDebugView = true;
@@ -96,7 +96,7 @@ void QxGLTFViewer::Initialize(const SampleInitInfo& InitInfo)
     RenderCI.FrontCCW = true;
     RenderCI.UseTextureAtlas = m_bUseResourceCache;
     m_GLTFRender.reset(
-        new GLTF_PBR_Renderer(
+        new QxGLTF_PBR_Render(
             m_pDevice, m_pImmediateContext, RenderCI));
 
     CreateUniformBuffer(m_pDevice,
@@ -125,9 +125,14 @@ void QxGLTFViewer::Initialize(const SampleInitInfo& InitInfo)
     m_pImmediateContext->TransitionResourceStates(
         _countof(Barrires), Barrires);
 
-    m_GLTFRender->PrecomputeCubemaps(
-        m_pDevice, m_pImmediateContext,
-        m_EnvironmentMapSRV);
+    // m_GLTFRender->PrecomputeCubemaps(
+    //     m_pDevice, m_pImmediateContext,
+    //     m_EnvironmentMapSRV);
+    m_GLTFRender->PreComputeCubemaps(
+        m_pDevice,
+        m_pImmediateContext,
+        m_EnvironmentMapSRV
+        );
 
     RefCntAutoPtr<IRenderStateNotationParser> pRSNParser;
     {
